@@ -6,15 +6,22 @@ import {
   Typography,
   Box,
   Avatar,
+  Menu,
+  MenuItem,
+  Divider,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import LogoutIcon from "@mui/icons-material/Logout";
-import { useLocation } from "react-router-dom";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import { useLocation, useNavigate } from "react-router-dom";
 import { menuItems } from "../../config/menuConfig";
 
 export default function PageHeader({ open, setOpen }) {
   const location = useLocation();
+  const navigate = useNavigate();
+
   const [anchorEl, setAnchorEl] = React.useState(null);
+  const menuOpen = Boolean(anchorEl);
 
   const current =
     menuItems.find((item) => item.path === location.pathname) || menuItems[0];
@@ -41,11 +48,11 @@ export default function PageHeader({ open, setOpen }) {
           justifyContent: "space-between",
         }}
       >
-        {/* ========= LEFT SIDE ========= */}
+        {/* ✅ LEFT SIDE */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <IconButton 
-            onClick={() => setOpen(!open)} 
+          <IconButton
             sx={{ color: "#ffffffff" }}
+            onClick={() => setOpen(!open)} // ✅ working toggle
           >
             <MenuIcon />
           </IconButton>
@@ -55,29 +62,57 @@ export default function PageHeader({ open, setOpen }) {
           </Typography>
         </Box>
 
-        {/* ========= RIGHT SIDE ========= */}
+        {/* ✅ RIGHT SIDE */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          
-          {/* User Name Removed from here */}
-
-          {/* 1. Profile Avatar */}
+          {/* ✅ Profile Avatar */}
           <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
             <Avatar
               sx={{
-                bgcolor: "#186344ff", 
+                bgcolor: "#186344ff",
                 width: 34,
                 height: 34,
               }}
             >
-             
+              N
             </Avatar>
           </IconButton>
 
-          {/* 2. Logout Icon (Right of Profile) */}
-          <IconButton 
-             size="small" 
-             sx={{ color: "#ff4d4d" }} // Slightly brighter red for visibility on dark green
-             aria-label="logout" 
+          {/* ✅ Profile Dropdown Menu */}
+          <Menu
+            anchorEl={anchorEl}
+            open={menuOpen}
+            onClose={() => setAnchorEl(null)}
+          >
+            <MenuItem
+              onClick={() => {
+                setAnchorEl(null);
+                navigate("/profile"); // ✅ go Profile
+              }}
+            >
+              <AccountCircleIcon sx={{ mr: 1 }} />
+              Profile
+            </MenuItem>
+
+            <Divider />
+
+            <MenuItem
+              onClick={() => {
+                setAnchorEl(null);
+                navigate("/"); // ✅ logout action (change if needed)
+              }}
+              sx={{ color: "red" }}
+            >
+              <LogoutIcon sx={{ mr: 1 }} />
+              Logout
+            </MenuItem>
+          </Menu>
+
+          {/* ✅ Logout Icon Button */}
+          <IconButton
+            size="small"
+            sx={{ color: "#ff4d4d" }}
+            aria-label="logout"
+            onClick={() => navigate("/")}
           >
             <LogoutIcon />
           </IconButton>

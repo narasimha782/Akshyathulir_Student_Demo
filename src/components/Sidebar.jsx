@@ -9,7 +9,6 @@ import {
   Divider,
 } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
-
 /* Icons */
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
@@ -19,11 +18,10 @@ import HandshakeIcon from "@mui/icons-material/Handshake";
 import MapIcon from "@mui/icons-material/Map";
 import GavelIcon from "@mui/icons-material/Gavel";
 import LogoutIcon from "@mui/icons-material/Logout";
-
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 // Configurable constants
 const DRAWER_WIDTH_OPEN = 240;
 const DRAWER_WIDTH_CLOSED = 70;
-
 const icons = {
   Dashboard: <DashboardIcon />,
   Fundraising: <MonetizationOnIcon />,
@@ -31,9 +29,9 @@ const icons = {
   "Milestone Tracking": <FlagIcon />,
   "Investor Relations": <HandshakeIcon />,
   "Product Roadmap": <MapIcon />,
+  "Profile": <AccountCircleIcon />,
   "Legal Compliance": <GavelIcon />,
 };
-
 // Assuming menuItems comes from your config
 import { menuItems } from "../config/menuConfig";
 
@@ -47,7 +45,6 @@ export default function Sidebar({ open, setOpen }) {
     if (timerRef.current) clearTimeout(timerRef.current);
     setOpen(true);
   };
-
   // Close sidebar after a small delay
   const handleMouseLeave = () => {
     timerRef.current = setTimeout(() => {
