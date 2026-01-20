@@ -1,881 +1,562 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from "react";
+import MainLayout from "../layout/MainLayout";
+
 import {
-  Container,
-  Typography,
   Box,
+  Typography,
+  Grid,
   Card,
   CardContent,
+  Chip,
+  Stack,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   TextField,
   MenuItem,
-  FormControl,
-  FormLabel,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-  Button,
-  CircularProgress,
-  ThemeProvider,
-  createTheme,
-  CssBaseline,
-  FormHelperText,
-} from '@mui/material';
+} from "@mui/material";
 
-const theme = createTheme({
-  typography: {
-    h1: { fontSize: '34px' },
-    h5: { fontSize: '20px' },
-    h6: { fontSize: '16px' },
-    body1: { fontSize: '16px' },
-    body2: { fontSize: '14px' },
-    button: { fontSize: '15px' },
-  },
-  components: {
-    MuiTextField: {
-      styleOverrides: {
-        root: { width: '100%' },
-      },
-    },
-    MuiInputBase: {
-      styleOverrides: {
-        input: { fontSize: '16px' },
-      },
-    },
-    MuiInputLabel: {
-      styleOverrides: {
-        root: { fontSize: '14px' },
-      },
-    },
-  },
-});
+// ✅ MUI Icons
+import GavelIcon from "@mui/icons-material/Gavel";
+import AddIcon from "@mui/icons-material/Add";
+import TodayIcon from "@mui/icons-material/Today";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 
-// Helper for row layout
-const FormRow = ({ children }) => (
-  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
-    {React.Children.map(children, (child) => (
-      <Box sx={{ flex: 1, minWidth: '250px' }}>
-        {child}
-      </Box>
-    ))}
-  </Box>
-);
-
-function App() {
-  // --- DATE CALCULATIONS ---
-  // 1. Get Today's Date in YYYY-MM-DD format
-  const today = new Date().toISOString().split('T')[0];
-
-  // 2. Get Date 2 Years Ago from Today
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - 2);
-  const twoYearsAgo = d.toISOString().split('T')[0];
-  // -------------------------
-
-  const initialAddress = {
-    fullAddress: '', 
-    country: '',
-    state: '',
-    district: '',
-    city: '',
-    area: '',
-    pinCode: ''
-  };
-
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    linkedin: '',
-    website: '',
-    dateOfBirth: '',
-    gender: '',
-    designation: '',
-    startupName: '',
-    legalStatus: '',
-    dateOfEstablishment: '',
-    startupStage: '',
-    primarySector: '',
-    companyPAN: '',
-    currentTeamSize: '',
-    maleCount: '',
-    femaleCount: '',
-    gstin: '',
-    companyWebsite: '',
-    numberOfBranches: '1', 
-    branchAddresses: [{ ...initialAddress }],
-    founderName: '',
-    founderEmail: '',
-    founderPhone: '',
-    founderDOB: '', // Added
-    founderGender: '', // Added
-    founderLinkedIn: '',
-    founderFacebook: '', 
-    fundingNeeded: '',
-    mentorshipNeeded: '',
-    technologySupport: '',
-    incubationSpace: '',
-    supportInterest: '',
-    governmentSchemes: '',
-  });
-
-  const [errors, setErrors] = useState({});
-  const [countryList, setCountryList] = useState([]);
-  
-  const [addressArrays, setAddressArrays] = useState({
-    0: { states: [], districts: [], cities: [] }
-  });
-
-  const [isLoading, setIsLoading] = useState({
-    countries: false, states: false, districts: false, cities: false
-  });
-
-  // --- API: Fetch Countries on Load ---
-  useEffect(() => {
-    const fetchCountries = async () => {
-      setIsLoading(prev => ({ ...prev, countries: true }));
-      try {
-        const response = await fetch("https://countriesnow.space/api/v0.1/countries/iso");
-        const data = await response.json();
-        if (data.data) {
-          setCountryList(data.data.map(c => c.name).sort());
-        }
-      } catch (error) { console.error(error); }
-      setIsLoading(prev => ({ ...prev, countries: false }));
-    };
-    fetchCountries();
-  }, []);
-
-  // --- Handle Number of Branches ---
-  const handleBranchCountChange = (e) => {
-    const count = parseInt(e.target.value) || 0;
-    const updatedFormData = { ...formData, numberOfBranches: e.target.value };
-    const validCount = count > 0 ? count : 1; 
-    const currentAddresses = [...formData.branchAddresses];
-    if (validCount > currentAddresses.length) {
-        for (let i = currentAddresses.length; i < validCount; i++) {
-            currentAddresses.push({ ...initialAddress });
-        }
-    } else if (validCount < currentAddresses.length) {
-        currentAddresses.length = validCount;
-    }
-    updatedFormData.branchAddresses = currentAddresses;
-    setFormData(updatedFormData);
-  };
-
-  // --- Generic Handler for Address Fields ---
-  const handleAddressFieldChange = (index, field, value) => {
-    const updatedAddresses = [...formData.branchAddresses];
-    updatedAddresses[index] = { ...updatedAddresses[index], [field]: value };
-    setFormData({ ...formData, branchAddresses: updatedAddresses });
-    if (errors[`address_${index}_${field}`]) {
-       setErrors({ ...errors, [`address_${index}_${field}`]: '' });
-    }
-  };
-
-  // --- API Handlers for Dynamic Addresses ---
-  const handleCountryChange = async (index, event) => {
-    const selectedCountry = event.target.value;
-    const updatedAddresses = [...formData.branchAddresses];
-    updatedAddresses[index] = { 
-      ...updatedAddresses[index], 
-      country: selectedCountry, 
-      state: '', district: '', city: '', pinCode: '' 
-    };
-    setFormData({ ...formData, branchAddresses: updatedAddresses });
-    setAddressArrays(prev => ({ ...prev, [index]: { states: [], districts: [], cities: [] } }));
-
-    if (selectedCountry) {
-      setIsLoading(prev => ({ ...prev, states: true }));
-      try {
-        const response = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
-          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ country: selectedCountry }),
-        });
-        const result = await response.json();
-        if (result.data?.states) {
-          setAddressArrays(prev => ({
-            ...prev,
-            [index]: { ...prev[index], states: result.data.states.map(s => s.name) }
-          }));
-        }
-      } catch (error) { console.error(error); }
-      setIsLoading(prev => ({ ...prev, states: false }));
-    }
-  };
-
-  const handleStateChange = async (index, event) => {
-    const selectedState = event.target.value;
-    const currentCountry = formData.branchAddresses[index].country;
-    const updatedAddresses = [...formData.branchAddresses];
-    updatedAddresses[index] = { 
-      ...updatedAddresses[index], 
-      state: selectedState, district: '', city: '', pinCode: '' 
-    };
-    setFormData({ ...formData, branchAddresses: updatedAddresses });
-    setAddressArrays(prev => ({ ...prev, [index]: { ...prev[index], districts: [], cities: [] } }));
-
-    if (selectedState && currentCountry) {
-      setIsLoading(prev => ({ ...prev, districts: true }));
-      try {
-        const response = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
-          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ country: currentCountry, state: selectedState }),
-        });
-        const result = await response.json();
-        if (result.data) {
-            setAddressArrays(prev => ({
-                ...prev,
-                [index]: { ...prev[index], districts: result.data }
-            }));
-        }
-      } catch (error) { console.error(error); }
-      setIsLoading(prev => ({ ...prev, districts: false }));
-    }
-  };
-
-  const handleDistrictChange = async (index, event) => {
-    const selectedDistrict = event.target.value;
-    const currentCountry = formData.branchAddresses[index].country;
-    const updatedAddresses = [...formData.branchAddresses];
-    updatedAddresses[index] = { 
-      ...updatedAddresses[index], 
-      district: selectedDistrict, city: '', pinCode: '' 
-    };
-    setFormData({ ...formData, branchAddresses: updatedAddresses });
-    setAddressArrays(prev => ({ ...prev, [index]: { ...prev[index], cities: [] } }));
-
-    if (selectedDistrict && currentCountry === 'India') {
-      setIsLoading(prev => ({ ...prev, cities: true }));
-      try {
-        const response = await fetch(`https://api.postalpincode.in/postoffice/${selectedDistrict}`);
-        const result = await response.json();
-        if (result?.[0]?.PostOffice) {
-          const uniqueCities = [...new Set(result[0].PostOffice.map(po => ({ name: po.Name, pin: po.Pincode })))];
-          const sortedCities = uniqueCities.sort((a, b) => a.name.localeCompare(b.name));
-          setAddressArrays(prev => ({
-            ...prev,
-            [index]: { ...prev[index], cities: sortedCities } 
-          }));
-        }
-      } catch (error) { console.error(error); }
-      setIsLoading(prev => ({ ...prev, cities: false }));
-    }
-  };
-
-  const handleCityChange = (index, event) => {
-      handleAddressFieldChange(index, 'city', event.target.value);
-  }
-
-  // --- General Input Handler ---
-  const handleInputChange = (field) => (event) => {
-    setFormData({ ...formData, [field]: event.target.value });
-    if (errors[field]) {
-      setErrors({ ...errors, [field]: '' });
-    }
-  };
-
-  // --- Validation ---
-  const validateForm = () => {
-    let tempErrors = {};
-    let isValid = true;
-
-    const checkRequired = (field, label) => {
-      if (!formData[field]) {
-        tempErrors[field] = `${label} is required`;
-        isValid = false;
-      }
-    };
-
-    // Personal Info
-    checkRequired('firstName', 'First Name');
-    checkRequired('lastName', 'Last Name');
-    checkRequired('email', 'Email');
-    checkRequired('phone', 'Phone');
-    checkRequired('dateOfBirth', 'DOB');
-    checkRequired('gender', 'Gender');
-    checkRequired('designation', 'Designation');
-
-    // Company
-    checkRequired('startupName', 'Startup Name');
-    checkRequired('legalStatus', 'Legal Status');
-    checkRequired('dateOfEstablishment', 'Date of Est.');
-    checkRequired('primarySector', 'Sector');
-    checkRequired('companyPAN', 'PAN');
-    checkRequired('currentTeamSize', 'Team Size');
-    checkRequired('maleCount', 'Male Count');
-    checkRequired('femaleCount', 'Female Count');
-    checkRequired('numberOfBranches', 'Branches');
-
-    // Founder 
-    checkRequired('founderName', 'Founder Name');
-    checkRequired('founderEmail', 'Founder Email');
-    checkRequired('founderPhone', 'Founder Phone');
-    checkRequired('founderDOB', 'Founder DOB'); // Added validation
-    checkRequired('founderGender', 'Founder Gender'); // Added validation
-
-    // ** Custom Date Validation **
-    if (formData.dateOfEstablishment) {
-      if (formData.dateOfEstablishment < twoYearsAgo) {
-        tempErrors.dateOfEstablishment = "Startup must be less than 2 years old.";
-        isValid = false;
-      } else if (formData.dateOfEstablishment > today) {
-        tempErrors.dateOfEstablishment = "Date cannot be in the future.";
-        isValid = false;
-      }
-    }
-
-    // Address Validation 
-    formData.branchAddresses.forEach((addr, index) => {
-        if (!addr.country) { tempErrors[`address_${index}_country`] = 'Required'; isValid = false; }
-        if (!addr.state) { tempErrors[`address_${index}_state`] = 'Required'; isValid = false; }
-        if (!addr.district) { tempErrors[`address_${index}_district`] = 'Required'; isValid = false; }
-        if (!addr.city) { tempErrors[`address_${index}_city`] = 'Required'; isValid = false; }
-        if (!addr.pinCode) { tempErrors[`address_${index}_pinCode`] = 'Required'; isValid = false; }
-    });
-
-    setErrors(tempErrors);
-    return isValid;
-  };
-
-  const handleSubmit = () => {
-    if (validateForm()) {
-      console.log('Form Data Submitted:', formData);
-      alert('Application Submitted Successfully!');
-    } else {
-      alert('Please correct errors before submitting.');
-      console.log(errors);
-    }
-  };
-  
-  const handleReset = () => {
-    setFormData({
-      firstName: '', lastName: '', email: '', phone: '', linkedin: '', website: '', dateOfBirth: '', gender: '', designation: '',
-      startupName: '', legalStatus: '', dateOfEstablishment: '', startupStage: '', primarySector: '', companyPAN: '', currentTeamSize: '', maleCount: '', femaleCount: '', gstin: '', companyWebsite: '', numberOfBranches: '1',
-      branchAddresses: [{ ...initialAddress }],
-      founderName: '', founderEmail: '', founderPhone: '', founderDOB: '', founderGender: '', founderLinkedIn: '', founderFacebook: '',
-      fundingNeeded: '', mentorshipNeeded: '', technologySupport: '', incubationSpace: '', supportInterest: '', governmentSchemes: ''
-    });
-    setErrors({});
-    setAddressArrays({ 0: { states: [], districts: [], cities: [] } });
-  };
-
+function MetricCard({ title, value, subtitle, percent = "0%" }) {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h3" component="h1" align="center" sx={{ mb: 4, color: '#1B5E20', fontWeight: 'bold', fontSize: '34px' }}>
-        Startup Details Form (Under 2 Years)
-      </Typography>
+    <Card
+      sx={{
+        borderRadius: 3,
+        boxShadow: "0px 10px 30px rgba(0,0,0,0.06)",
+        height: "100%",
+      }}
+    >
+      <CardContent sx={{ p: 3 }}>
+        {/* Title + Green dot */}
+        <Box display="flex" alignItems="center" justifyContent="space-between">
+          <Typography fontWeight={600}>{title}</Typography>
 
-      {/* Company Details */}
-      <Card sx={{ mb: 3, border: '2px solid #1B5E20' }}>
-        <Box sx={{ backgroundColor: '#1B5E20', color: 'white', p: 2 }}>
-          <Typography variant="h5" sx={{ fontWeight: 'bold', fontSize: '20px' }}>Company Details</Typography>
+          <Box
+            sx={{
+              width: 18,
+              height: 18,
+              borderRadius: "50%",
+              border: "2px solid #4CAF50",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <FiberManualRecordIcon sx={{ fontSize: 10, color: "#4CAF50" }} />
+          </Box>
         </Box>
-        <CardContent sx={{ p: 3 }}>
-          <FormRow>
-            <TextField 
-              label="Startup Name *" 
-              value={formData.startupName} 
-              onChange={handleInputChange('startupName')} 
-              error={!!errors.startupName}
-              helperText={errors.startupName}
-            />
-            <TextField 
-              select 
-              label="Legal Status *" 
-              value={formData.legalStatus} 
-              onChange={handleInputChange('legalStatus')}
-              error={!!errors.legalStatus}
-              helperText={errors.legalStatus}
-            >
-                <MenuItem value="Private Limited">Private Limited</MenuItem>
-                <MenuItem value="LLP">LLP</MenuItem>
-                <MenuItem value="Partnership">Partnership</MenuItem>
-                <MenuItem value="Sole Proprietorship">Sole Proprietorship</MenuItem>
-            </TextField>
-            
-            {/* --- DATE OF ESTABLISHMENT --- */}
-            <TextField
-              label="Date of Establishment *"
-              type="date"
-              value={formData.dateOfEstablishment}
-              onChange={handleInputChange('dateOfEstablishment')}
-              InputLabelProps={{ shrink: true }}
-              error={!!errors.dateOfEstablishment}
-              helperText={errors.dateOfEstablishment || "Must be within last 2 years"}
-              inputProps={{
-                max: today,         // Cannot be future
-                min: twoYearsAgo    // Cannot be older than 2 years
+
+        {/* Value */}
+        <Typography variant="h3" fontWeight="bold" sx={{ mt: 3, mb: 2 }}>
+          {value}
+        </Typography>
+
+        {/* Footer */}
+        <Box display="flex" alignItems="center" justifyContent="space-between">
+          <Typography variant="body2" color="text.secondary">
+            {subtitle}
+          </Typography>
+
+          <Stack direction="row" spacing={1}>
+            <Chip
+              icon={<TodayIcon sx={{ fontSize: 16 }} />}
+              label="+0 today"
+              size="small"
+              sx={{
+                bgcolor: "#E8F5E9",
+                color: "#2E7D32",
+                fontWeight: 600,
+                borderRadius: 10,
               }}
             />
-            {/* -------------------------------------- */}
-
-          </FormRow>
-          <FormRow>
-            
-            <TextField
-              select
-              label="Primary Sector *"
-              value={formData.primarySector}
-              onChange={handleInputChange('primarySector')}
-              error={!!errors.primarySector}
-              helperText={errors.primarySector || "Select your startup's main sector"}
-            >
-              <MenuItem value="HealthTech">HealthTech</MenuItem>
-              <MenuItem value="FinTech">FinTech</MenuItem>
-              <MenuItem value="EdTech">EdTech</MenuItem>
-              <MenuItem value="AgriTech">AgriTech</MenuItem>
-              <MenuItem value="E-Commerce">E-Commerce</MenuItem>
-              <MenuItem value="AI / ML">AI / ML</MenuItem>
-              <MenuItem value="IoT">IoT</MenuItem>
-              <MenuItem value="SaaS">SaaS</MenuItem>
-              <MenuItem value="Blockchain">Blockchain</MenuItem>
-              <MenuItem value="Other">Other</MenuItem>
-            </TextField>
-            <TextField
-              label="Company PAN *"
-              value={formData.companyPAN}
-              onChange={handleInputChange('companyPAN')}
-              placeholder="ABCDE1234F"
-              inputProps={{ maxLength: 10 }}
-              error={!!errors.companyPAN}
-              helperText={errors.companyPAN }
+            <Chip
+              icon={<ArrowUpwardIcon sx={{ fontSize: 16 }} />}
+              label={percent}
+              size="small"
+              sx={{
+                bgcolor: "#E8F5E9",
+                color: "#2E7D32",
+                fontWeight: 600,
+                borderRadius: 10,
+              }}
             />
-            <TextField label="GSTIN / CIN" value={formData.gstin} onChange={handleInputChange('gstin')}  />
-            
-          </FormRow>
-          <FormRow>
-            <TextField 
-              label="Current Team Size *" 
-              value={formData.currentTeamSize} 
-              onChange={handleInputChange('currentTeamSize')} 
-              placeholder="Excluding Founders" 
-              error={!!errors.currentTeamSize}
-              helperText={errors.currentTeamSize}
-            />
-            <TextField
-              label="Male Employees *"
-              type="number"
-              value={formData.maleCount}
-              onChange={handleInputChange('maleCount')}
-              error={!!errors.maleCount}
-              helperText={errors.maleCount}
-              inputProps={{ min: 0 }}
-            />
-
-            <TextField
-              label="Female Employees *"
-              type="number"
-              value={formData.femaleCount}
-              onChange={handleInputChange('femaleCount')}
-              error={!!errors.femaleCount}
-              helperText={errors.femaleCount}
-              inputProps={{ min: 0 }}
-            />
-          </FormRow>
-
-          <FormRow>
-            
-            
-            <TextField label="Company Website" value={formData.companyWebsite} onChange={handleInputChange('companyWebsite')} placeholder="https://www.yourstartup.com" />
-            <TextField 
-                label="Number of Branches *" 
-                type="number"
-                value={formData.numberOfBranches} 
-                onChange={handleBranchCountChange} 
-                error={!!errors.numberOfBranches}
-                helperText={errors.numberOfBranches }
-                inputProps={{ min: 1 }}
-            />
-          </FormRow>
-          
-        </CardContent>
-      </Card>
-
-      {/* Dynamic Registered Office Address(es) based on Number of Branches */}
-      {formData.branchAddresses.map((address, index) => {
-          const currentLists = addressArrays[index] || { states: [], districts: [], cities: [] };
-          
-          return (
-            <Card key={index} sx={{ mb: 3, border: '2px solid #1B5E20' }}>
-                <Box sx={{ backgroundColor: '#1B5E20', color: 'white', p: 2, display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="h5" sx={{ fontWeight: 'bold', fontSize: '20px' }}>
-                        {index === 0 ? "Registered Office Address 1 (Main)" : `Registered Office Address ${index + 1}`}
-                    </Typography>
-                </Box>
-                <CardContent sx={{ p: 3 }}>
-                <FormRow>
-                    {/* Country */}
-                    <TextField 
-                    select 
-                    label="Country *" 
-                    value={address.country} 
-                    onChange={(e) => handleCountryChange(index, e)} 
-                    disabled={isLoading.countries}
-                    error={!!errors[`address_${index}_country`]}
-                    helperText={errors[`address_${index}_country`]}
-                    >
-                    {isLoading.countries ? <MenuItem disabled><CircularProgress size={20} /> Loading...</MenuItem> : countryList.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
-                    </TextField>
-
-                    {/* State */}
-                    <TextField 
-                    select 
-                    label="State *" 
-                    value={address.state} 
-                    onChange={(e) => handleStateChange(index, e)} 
-                    disabled={!address.country || isLoading.states}
-                    error={!!errors[`address_${index}_state`]}
-                    helperText={errors[`address_${index}_state`]}
-                    >
-                    {currentLists.states.length === 0 && address.country ? <MenuItem disabled>Loading/No Data</MenuItem> : 
-                      currentLists.states.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
-                    </TextField>
-
-                    {/* District */}
-                    <TextField 
-                    select 
-                    label="District *" 
-                    value={address.district} 
-                    onChange={(e) => handleDistrictChange(index, e)} 
-                    disabled={!address.state || isLoading.districts}
-                    error={!!errors[`address_${index}_district`]}
-                    helperText={errors[`address_${index}_district`]}
-                    >
-                    {currentLists.districts.map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-                    </TextField>
-
-                    {/* City */}
-                    {address.country === 'India' ? (
-                    <TextField 
-                        select 
-                        label="City *" 
-                        value={address.city} 
-                        onChange={(e) => handleCityChange(index, e)} 
-                        disabled={!address.district || isLoading.cities}
-                        error={!!errors[`address_${index}_city`]}
-                        helperText={errors[`address_${index}_city`]}
-                    >
-                        {currentLists.cities.map((c, i) => <MenuItem key={`${c.name}-${i}`} value={c.name}>{c.name}</MenuItem>)}
-                    </TextField>
-                    ) : (
-                    <TextField 
-                        label="City *" 
-                        value={address.city} 
-                        onChange={(e) => handleAddressFieldChange(index, 'city', e.target.value)} 
-                        placeholder="Enter City" 
-                        error={!!errors[`address_${index}_city`]}
-                        helperText={errors[`address_${index}_city`]}
-                    />
-                    )}
-                </FormRow>
-
-                
-                <FormRow>
-                    <TextField 
-                        label="Area / Locality" 
-                        value={address.area} 
-                        onChange={(e) => handleAddressFieldChange(index, 'area', e.target.value)} 
-                    />
-                    <TextField 
-                    label="Pin Code *" 
-                    value={address.pinCode} 
-                    onChange={(e) => handleAddressFieldChange(index, 'pinCode', e.target.value)} 
-                    error={!!errors[`address_${index}_pinCode`]}
-                    helperText={errors[`address_${index}_pinCode`]}
-                    />
-                </FormRow>
-
-                <FormRow>
-                      <TextField 
-                        label="Full Address (Street / Building / Door No)" 
-                        multiline
-                        rows={2}
-                        value={address.fullAddress} 
-                        onChange={(e) => handleAddressFieldChange(index, 'fullAddress', e.target.value)} 
-                        placeholder="Enter detailed address here"
-                      />
-                </FormRow>
-                </CardContent>
-            </Card>
-          )
-      })}
-
-
-      {/* Personal Information */}
-      <Card sx={{ mb: 3, border: '2px solid #1B5E20' }}>
-        <Box sx={{ backgroundColor: '#1B5E20', color: 'white', p: 2 }}>
-          <Typography variant="h5" sx={{ fontWeight: 'bold', fontSize: '20px' }}>Personal Information</Typography>
+          </Stack>
         </Box>
-        <CardContent sx={{ p: 3 }}>
-          <FormRow>
-            <TextField 
-              label="First Name *" 
-              value={formData.firstName} 
-              onChange={handleInputChange('firstName')} 
-              error={!!errors.firstName}
-              helperText={errors.firstName}
-            />
-            <TextField 
-              label="Last Name *" 
-              value={formData.lastName} 
-              onChange={handleInputChange('lastName')} 
-              error={!!errors.lastName}
-              helperText={errors.lastName}
-            />
-            <TextField 
-              label="Email Address *" 
-              type="email" 
-              value={formData.email} 
-              onChange={handleInputChange('email')} 
-              error={!!errors.email}
-              helperText={errors.email}
-            />
-          </FormRow>
-          <FormRow>
-            
-            <TextField 
-              label="Phone Number *" 
-              value={formData.phone} 
-              onChange={handleInputChange('phone')} 
-              error={!!errors.phone}
-              helperText={errors.phone}
-            />
-            <TextField label="LinkedIn Profile URL" value={formData.linkedin} onChange={handleInputChange('linkedin')} />
-            <TextField 
-              label="Date of Birth *" 
-              type="date" 
-              value={formData.dateOfBirth} 
-              onChange={handleInputChange('dateOfBirth')} 
-              InputLabelProps={{ shrink: true }} 
-              error={!!errors.dateOfBirth}
-              helperText={errors.dateOfBirth}
-              inputProps={{ max: today }} // Restrict future dates
-            />
-          </FormRow>
-          <FormRow>
-            
-            
-            {/* --- UPDATED: DATE OF BIRTH --- */}
-            
-            {/* ----------------------------- */}
-
-          </FormRow>
-          <FormRow>
-            <TextField
-              label="Designation *"
-              value={formData.designation}
-              onChange={handleInputChange('designation')}
-              error={!!errors.designation}
-              helperText={errors.designation}
-              sx={{ flex: 1 }}
-            />
-            <FormControl component="fieldset" error={!!errors.gender}>
-              <FormLabel component="legend" sx={{ fontSize: '14px' }}>Gender *</FormLabel>
-              <RadioGroup row value={formData.gender} onChange={handleInputChange('gender')}>
-                <FormControlLabel value="Male" control={<Radio />} label="Male" />
-                <FormControlLabel value="Female" control={<Radio />} label="Female" />
-                <FormControlLabel value="Others" control={<Radio />} label="Others" />
-              </RadioGroup>
-              {errors.gender && <FormHelperText>{errors.gender}</FormHelperText>}
-            </FormControl>
-          </FormRow>
-        </CardContent>
-      </Card>
-
-      {/* Founder Details */}
-      <Card sx={{ mb: 3, border: '2px solid #1B5E20' }}>
-        <Box sx={{ backgroundColor: '#1B5E20', color: 'white', p: 2 }}>
-            <Typography variant="h5" sx={{ fontWeight: 'bold', fontSize: '20px' }}>
-            Founder Details
-            </Typography>
-        </Box>
-        <CardContent sx={{ p: 3 }}>
-
-            {/* Founder Basic Details */}
-            <FormRow>
-            <TextField
-                label="Founder Name *"
-                value={formData.founderName}
-                onChange={handleInputChange('founderName')}
-                error={!!errors.founderName}
-                helperText={errors.founderName}
-            />
-
-            <TextField
-                label="Founder Email *"
-                type="email"
-                value={formData.founderEmail}
-                onChange={handleInputChange('founderEmail')}
-                error={!!errors.founderEmail}
-                helperText={errors.founderEmail}
-            />
-
-            <TextField
-                label="Founder Phone *"
-                value={formData.founderPhone}
-                onChange={handleInputChange('founderPhone')}
-                error={!!errors.founderPhone}
-                helperText={errors.founderPhone}
-            />
-            </FormRow>
-
-            {/* --- NEW SECTION: Founder DOB and Gender --- */}
-            <FormRow>
-                <TextField 
-                    label="Founder Date of Birth *" 
-                    type="date" 
-                    value={formData.founderDOB} 
-                    onChange={handleInputChange('founderDOB')} 
-                    InputLabelProps={{ shrink: true }} 
-                    error={!!errors.founderDOB}
-                    helperText={errors.founderDOB}
-                    inputProps={{ max: today }} 
-                />
-
-                <FormControl component="fieldset" error={!!errors.founderGender} sx={{ minWidth: 250 }}>
-                    <FormLabel component="legend" sx={{ fontSize: '14px' }}>Founder Gender *</FormLabel>
-                    <RadioGroup row value={formData.founderGender} onChange={handleInputChange('founderGender')}>
-                        <FormControlLabel value="Male" control={<Radio />} label="Male" />
-                        <FormControlLabel value="Female" control={<Radio />} label="Female" />
-                        <FormControlLabel value="Others" control={<Radio />} label="Others" />
-                    </RadioGroup>
-                    {errors.founderGender && <FormHelperText>{errors.founderGender}</FormHelperText>}
-                </FormControl>
-            </FormRow>
-            {/* ------------------------------------------- */}
-
-            {/* Social Profiles */}
-            <FormRow>
-            <TextField
-                label="Founder LinkedIn Profile"
-                value={formData.founderLinkedIn}
-                onChange={handleInputChange('founderLinkedIn')}
-                placeholder="https://linkedin.com/in/username"
-            />
-            
-            <TextField
-                label="Founder Facebook Profile"
-                value={formData.founderFacebook}
-                onChange={handleInputChange('founderFacebook')}
-                placeholder="https://facebook.com/username"
-            />
-            </FormRow>
-
-        </CardContent>
-        </Card>
-
-      {/* Startup Requirements */}
-      <Card sx={{ mb: 3, border: '2px solid #1B5E20' }}>
-        <Box sx={{ backgroundColor: '#1B5E20', color: 'white', p: 2 }}>
-            <Typography variant="h5" sx={{ fontWeight: 'bold', fontSize: '20px' }}>
-            Startup Requirements
-            </Typography>
-        </Box>
-
-        <CardContent sx={{ px: 4, py: 3 }}>
-            <Box
-            sx={{
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-                columnGap: 6,
-                rowGap: 4,
-            }}
-            >
-            {/* Funding */}
-            <FormControl>
-                <FormLabel
-                    sx={{
-                    mb: 1,
-                    fontSize: '14px',
-                    textAlign: 'left',
-                    }}
-                >
-                    Funding Needed ?
-                </FormLabel>
-                <RadioGroup
-                row
-                value={formData.fundingNeeded}
-                onChange={handleInputChange('fundingNeeded')}
-                >
-                <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
-                <FormControlLabel value="No" control={<Radio />} label="No" />
-                </RadioGroup>
-            </FormControl>
-
-            {/* Mentorship */}
-            <FormControl>
-                <FormLabel sx={{ mb: 1, textAlign: 'left' }}>
-                    Mentorship Needed ?
-                </FormLabel>
-                <RadioGroup
-                row
-                value={formData.mentorshipNeeded}
-                onChange={handleInputChange('mentorshipNeeded')}
-                >
-                <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
-                <FormControlLabel value="No" control={<Radio />} label="No" />
-                </RadioGroup>
-            </FormControl>
-
-            {/* Technology */}
-            <FormControl>
-                <FormLabel sx={{ mb: 1, textAlign: 'left' }}>
-                    Technology Support Needed ?
-                </FormLabel>
-                <RadioGroup
-                row
-                value={formData.technologySupport}
-                onChange={handleInputChange('technologySupport')}
-                >
-                <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
-                <FormControlLabel value="No" control={<Radio />} label="No" />
-                </RadioGroup>
-            </FormControl>
-
-            {/* Incubation */}
-            <FormControl>
-                <FormLabel sx={{ mb: 1, textAlign: 'left' }}>
-                    Do you require Incubation / Co-working Space ?
-                </FormLabel>
-                <RadioGroup
-                row
-                value={formData.incubationSpace}
-                onChange={handleInputChange('incubationSpace')}
-                >
-                <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
-                <FormControlLabel value="No" control={<Radio />} label="No" />
-                </RadioGroup>
-            </FormControl>
-
-            {/* Internship support */}
-            <TextField
-                multiline
-                rows={3}
-                label="I am interested in receiving support for an internship program"
-                value={formData.supportInterest || ''}
-                onChange={handleInputChange('supportInterest')}
-            />
-
-            {/* Government schemes */}
-            <TextField
-                multiline
-                rows={3}
-                label="Check my eligibility for relevant Government Startup Schemes."
-                value={formData.governmentSchemes || ''}
-                onChange={handleInputChange('governmentSchemes')}
-            />
-            </Box>
-        </CardContent>
-        </Card>
-
-      {/* Submit Buttons */}
-      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 4 }}>
-        <Button variant="contained" size="large" onClick={handleSubmit} sx={{ backgroundColor: '#1B5E20', '&:hover': { backgroundColor: '#0f7e16ff' }, px: 4, py: 1.5 }}>SUBMIT APPLICATION</Button>
-        <Button variant="outlined" size="large" onClick={handleReset} sx={{ borderColor: '#f44336', color: '#f44336', '&:hover': { borderColor: '#d32f2f', backgroundColor: '#ffebee' }, px: 4, py: 1.5 }}>RESET FORM</Button>
-      </Box>
-      </Container>
-    </ThemeProvider>
+      </CardContent>
+    </Card>
   );
 }
 
-export default App;
+function StatusChip({ status }) {
+  let styles = { bgcolor: "#E0E0E0", color: "#424242" };
+
+  if (status === "Completed") styles = { bgcolor: "#A5D6A7", color: "#1B5E20" };
+  if (status === "In Progress") styles = { bgcolor: "#C8E6C9", color: "#1B5E20" };
+  if (status === "Pending") styles = { bgcolor: "#E0E0E0", color: "#424242" };
+
+  return (
+    <Chip
+      label={status}
+      size="small"
+      sx={{
+        ...styles,
+        fontWeight: 600,
+        borderRadius: 10,
+        px: 1,
+      }}
+    />
+  );
+}
+
+function ActionButton({ action, onClick }) {
+  const color =
+    action === "Review"
+      ? "#1B5E20"
+      : action === "View"
+      ? "#607D8B"
+      : "#F9A825"; // Update yellow
+
+  return (
+    <Button
+      onClick={onClick}
+      variant="outlined"
+      size="small"
+      sx={{
+        textTransform: "none",
+        borderRadius: 2,
+        borderColor: "#A5D6A7",
+        color,
+        fontWeight: 600,
+        "&:hover": { borderColor: "#1B5E20" },
+      }}
+    >
+      {action}
+    </Button>
+  );
+}
+
+function PriorityText({ priority }) {
+  return (
+    <Typography
+      fontWeight={500}
+      sx={{
+        color:
+          priority === "Critical"
+            ? "#D32F2F"
+            : priority === "High"
+            ? "#1B5E20"
+            : "#555",
+      }}
+    >
+      {priority}
+    </Typography>
+  );
+}
+
+export default function LegalCompliance() {
+  const [items, setItems] = useState([
+    {
+      id: 1,
+      requirement: "Privacy Policy Update",
+      category: "Regulatory",
+      dueDate: "Jan 15, 2026",
+      priority: "High",
+      status: "Pending",
+      action: "Review",
+    },
+    {
+      id: 2,
+      requirement: "Employment Contracts",
+      category: "Employment",
+      dueDate: "Jan 31, 2027",
+      priority: "Medium",
+      status: "Completed",
+      action: "View",
+    },
+    {
+      id: 3,
+      requirement: "Trademark Filing",
+      category: "IP",
+      dueDate: "Feb 28, 2026",
+      priority: "High",
+      status: "In Progress",
+      action: "Update",
+    },
+    {
+      id: 4,
+      requirement: "Tax Registration",
+      category: "Corporate",
+      dueDate: "Jan 31, 2026",
+      priority: "Critical",
+      status: "Pending",
+      action: "Review",
+    },
+  ]);
+
+  // ===== Metrics like screenshot =====
+  const totalItems = 12;
+  const completedCount = 9;
+  const pendingCount = 3;
+  const complianceScore = "75%";
+
+  const completedPercent = useMemo(() => "75.0%", []);
+
+  // ===== Dialog state =====
+  const [open, setOpen] = useState(false);
+  const [editId, setEditId] = useState(null);
+
+  const [form, setForm] = useState({
+    requirement: "",
+    category: "Regulatory",
+    dueDate: "",
+    priority: "Medium",
+    status: "Pending",
+    action: "Review",
+  });
+
+  const resetForm = () => {
+    setForm({
+      requirement: "",
+      category: "Regulatory",
+      dueDate: "",
+      priority: "Medium",
+      status: "Pending",
+      action: "Review",
+    });
+  };
+
+  const handleOpenAdd = () => {
+    setEditId(null);
+    resetForm();
+    setOpen(true);
+  };
+
+  const handleOpenEdit = (row) => {
+    setEditId(row.id);
+    setForm({
+      requirement: row.requirement,
+      category: row.category,
+      dueDate: row.dueDate,
+      priority: row.priority,
+      status: row.status,
+      action: row.action,
+    });
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setEditId(null);
+    resetForm();
+  };
+
+  const handleSave = () => {
+    if (!form.requirement.trim() || !form.dueDate.trim()) {
+      alert("Please fill Requirement and Due Date");
+      return;
+    }
+
+    if (editId) {
+      setItems((prev) =>
+        prev.map((x) => (x.id === editId ? { ...x, ...form } : x))
+      );
+    } else {
+      const newItem = {
+        id: Date.now(),
+        ...form,
+      };
+      setItems((prev) => [newItem, ...prev]);
+    }
+
+    handleClose();
+  };
+
+  const handleDelete = (id) => {
+    const ok = window.confirm("Delete this compliance item?");
+    if (!ok) return;
+    setItems((prev) => prev.filter((x) => x.id !== id));
+  };
+
+  const handleAction = (row) => {
+    alert(`${row.action} clicked for: ${row.requirement}`);
+  };
+
+  return (
+    <MainLayout>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          px: { xs: 2, md: 4 },
+          py: 3,
+          bgcolor: "#F4FBF7",
+        }}
+      >
+        {/* ===== TOP HEADER ===== */}
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="space-between"
+          mb={3}
+        >
+          <Box display="flex" alignItems="center" gap={1}>
+            <GavelIcon sx={{ color: "#2E7D32" }} />
+            <Typography variant="h5" fontWeight="bold">
+              Legal Compliance
+            </Typography>
+          </Box>
+
+          <Button
+            onClick={handleOpenAdd}
+            variant="contained"
+            startIcon={<AddIcon />}
+            sx={{
+              bgcolor: "#1B5E20",
+              borderRadius: 2,
+              textTransform: "none",
+              px: 2.5,
+              "&:hover": { bgcolor: "#145017" },
+            }}
+          >
+            Add Item
+          </Button>
+        </Box>
+
+        {/* ===== METRIC CARDS ===== */}
+        <Grid container spacing={3} mb={4}>
+          <Grid item xs={12} md={3}>
+            <MetricCard
+              title="Total Items"
+              value={totalItems}
+              subtitle="Compliance requirements"
+              percent="0%"
+            />
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <MetricCard
+              title="Completed"
+              value={completedCount}
+              subtitle="Up to date"
+              percent={completedPercent}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <MetricCard
+              title="Pending"
+              value={pendingCount}
+              subtitle="Needs attention"
+              percent="0%"
+            />
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <MetricCard
+              title="Compliance Score"
+              value={complianceScore}
+              subtitle="Overall health"
+              percent="0%"
+            />
+          </Grid>
+        </Grid>
+
+        {/* ===== TABLE CARD ===== */}
+        <Card
+          sx={{
+            borderRadius: 3,
+            boxShadow: "0px 10px 30px rgba(0,0,0,0.06)",
+          }}
+        >
+          <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+            <Typography variant="h6" fontWeight="bold" mb={2}>
+              Compliance Checklist
+            </Typography>
+
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: "bold" }}>Requirement</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Category</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Due Date</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Priority</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Action</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Manage</TableCell>
+                </TableRow>
+              </TableHead>
+
+              <TableBody>
+                {items.map((row) => (
+                  <TableRow key={row.id} hover>
+                    <TableCell>{row.requirement}</TableCell>
+                    <TableCell>{row.category}</TableCell>
+                    <TableCell>{row.dueDate}</TableCell>
+
+                    <TableCell>
+                      <PriorityText priority={row.priority} />
+                    </TableCell>
+
+                    <TableCell>
+                      <StatusChip status={row.status} />
+                    </TableCell>
+
+                    <TableCell>
+                      <ActionButton
+                        action={row.action}
+                        onClick={() => handleAction(row)}
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <IconButton
+                          onClick={() => handleOpenEdit(row)}
+                          sx={{
+                            border: "1px solid #A5D6A7",
+                            borderRadius: 2,
+                          }}
+                        >
+                          <EditIcon sx={{ color: "#1B5E20" }} />
+                        </IconButton>
+
+                        <IconButton
+                          onClick={() => handleDelete(row.id)}
+                          sx={{
+                            border: "1px solid #EEEEEE",
+                            borderRadius: 2,
+                          }}
+                        >
+                          <DeleteIcon sx={{ color: "#D32F2F" }} />
+                        </IconButton>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* ===== ADD / EDIT DIALOG ===== */}
+        <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+          <DialogTitle sx={{ fontWeight: "bold" }}>
+            {editId ? "Edit Compliance Item" : "Add Compliance Item"}
+          </DialogTitle>
+
+          <DialogContent sx={{ pt: 1 }}>
+            <Stack spacing={2} mt={1}>
+              <TextField
+                label="Requirement"
+                fullWidth
+                value={form.requirement}
+                onChange={(e) =>
+                  setForm({ ...form, requirement: e.target.value })
+                }
+              />
+
+              <TextField
+                label="Category"
+                select
+                fullWidth
+                value={form.category}
+                onChange={(e) =>
+                  setForm({ ...form, category: e.target.value })
+                }
+              >
+                <MenuItem value="Regulatory">Regulatory</MenuItem>
+                <MenuItem value="Employment">Employment</MenuItem>
+                <MenuItem value="IP">IP</MenuItem>
+                <MenuItem value="Corporate">Corporate</MenuItem>
+              </TextField>
+
+              <TextField
+                label="Due Date"
+                fullWidth
+                placeholder="Jan 15, 2026"
+                value={form.dueDate}
+                onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+              />
+
+              <TextField
+                label="Priority"
+                select
+                fullWidth
+                value={form.priority}
+                onChange={(e) =>
+                  setForm({ ...form, priority: e.target.value })
+                }
+              >
+                <MenuItem value="Critical">Critical</MenuItem>
+                <MenuItem value="High">High</MenuItem>
+                <MenuItem value="Medium">Medium</MenuItem>
+                <MenuItem value="Low">Low</MenuItem>
+              </TextField>
+
+              <TextField
+                label="Status"
+                select
+                fullWidth
+                value={form.status}
+                onChange={(e) =>
+                  setForm({ ...form, status: e.target.value })
+                }
+              >
+                <MenuItem value="Pending">Pending</MenuItem>
+                <MenuItem value="In Progress">In Progress</MenuItem>
+                <MenuItem value="Completed">Completed</MenuItem>
+              </TextField>
+
+              <TextField
+                label="Action"
+                select
+                fullWidth
+                value={form.action}
+                onChange={(e) =>
+                  setForm({ ...form, action: e.target.value })
+                }
+              >
+                <MenuItem value="Review">Review</MenuItem>
+                <MenuItem value="View">View</MenuItem>
+                <MenuItem value="Update">Update</MenuItem>
+              </TextField>
+            </Stack>
+          </DialogContent>
+
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={handleClose} sx={{ textTransform: "none" }}>
+              Cancel
+            </Button>
+
+            <Button
+              onClick={handleSave}
+              variant="contained"
+              sx={{
+                bgcolor: "#1B5E20",
+                textTransform: "none",
+                "&:hover": { bgcolor: "#145017" },
+              }}
+            >
+              {editId ? "Update" : "Save"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
+    </MainLayout>
+  );
+}
