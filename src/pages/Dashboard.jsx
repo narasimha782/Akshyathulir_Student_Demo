@@ -4,7 +4,6 @@ import MainLayout from "../layout/MainLayout";
 import {
   Box,
   Typography,
-  Grid,
   Card,
   CardContent,
   Chip,
@@ -12,7 +11,7 @@ import {
   Divider,
 } from "@mui/material";
 
-// ✅ MUI Icons
+import Grid from "@mui/material/Grid";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import GroupsIcon from "@mui/icons-material/Groups";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
@@ -20,7 +19,6 @@ import GavelIcon from "@mui/icons-material/Gavel";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import TodayIcon from "@mui/icons-material/Today";
 
-// Recharts
 import {
   LineChart,
   Line,
@@ -39,14 +37,30 @@ function MetricCard({ title, value, subtitle, percent, icon }) {
         borderRadius: 3,
         boxShadow: "0px 10px 30px rgba(0,0,0,0.08)",
         height: "100%",
+        width: "100%",
       }}
     >
       <CardContent sx={{ p: 3 }}>
         {/* Header */}
         <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box display="flex" alignItems="center" gap={1}>
+          <Box
+            display="flex"
+            alignItems="center"
+            gap={1}
+            sx={{ minWidth: 0 }}
+          >
             {icon}
-            <Typography fontWeight={700}>{title}</Typography>
+            <Typography
+              fontWeight={700}
+              sx={{
+                minWidth: 0,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {title}
+            </Typography>
           </Box>
 
           <Box
@@ -58,6 +72,7 @@ function MetricCard({ title, value, subtitle, percent, icon }) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              flexShrink: 0,
             }}
           >
             <Box
@@ -72,17 +87,35 @@ function MetricCard({ title, value, subtitle, percent, icon }) {
         </Box>
 
         {/* Value */}
-        <Typography variant="h3" fontWeight="bold" sx={{ mt: 3, mb: 2 }}>
+        <Typography
+          fontWeight="bold"
+          sx={{
+            mt: 3,
+            mb: 2,
+            fontSize: { xs: "1.6rem", sm: "2rem", md: "2.4rem" },
+            lineHeight: 1.1,
+          }}
+        >
           {value}
         </Typography>
 
         {/* Footer */}
         <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              minWidth: 0,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              pr: 1,
+            }}
+          >
             {subtitle}
           </Typography>
 
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
             <Chip
               icon={<TodayIcon sx={{ fontSize: 16 }} />}
               label="+0 today"
@@ -92,6 +125,7 @@ function MetricCard({ title, value, subtitle, percent, icon }) {
                 color: "#2E7D32",
                 fontWeight: 700,
                 borderRadius: 10,
+                display: { xs: "none", sm: "flex" },
               }}
             />
             <Chip
@@ -113,7 +147,6 @@ function MetricCard({ title, value, subtitle, percent, icon }) {
 }
 
 export default function Dashboard() {
-  // Graph Data
   const chartData = [
     { month: "Jan", amount: 0 },
     { month: "Feb", amount: 100 },
@@ -123,7 +156,6 @@ export default function Dashboard() {
     { month: "Jun", amount: 750 },
   ];
 
-  //  Recent Activities
   const recentActivities = [
     {
       id: 1,
@@ -148,10 +180,9 @@ export default function Dashboard() {
   return (
     <MainLayout>
       <Box sx={{ width: "100%" }}>
-        {/* ✅ TOP 4 CARDS (ALWAYS ONE ROW) */}
-        <Grid container spacing={3} mb={4}>
-          {/* ✅ md={3} is important (not lg={3}) */}
-          <Grid item xs={12} sm={6} md={3}>
+        {/* ✅ METRIC CARDS (Always 1 row + compress when sidebar opens) */}
+        <Grid container spacing={2} sx={{ mb: 4 }} wrap="nowrap">
+          <Grid sx={{ flex: 1, minWidth: 0 }}>
             <MetricCard
               title="Current Funding Round"
               value="Seed"
@@ -161,7 +192,7 @@ export default function Dashboard() {
             />
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid sx={{ flex: 1, minWidth: 0 }}>
             <MetricCard
               title="Team Size"
               value="8"
@@ -171,7 +202,7 @@ export default function Dashboard() {
             />
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid sx={{ flex: 1, minWidth: 0 }}>
             <MetricCard
               title="Milestones"
               value="8/15"
@@ -181,7 +212,7 @@ export default function Dashboard() {
             />
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid sx={{ flex: 1, minWidth: 0 }}>
             <MetricCard
               title="Legal Compliance"
               value="9/12"
@@ -192,10 +223,10 @@ export default function Dashboard() {
           </Grid>
         </Grid>
 
-        {/* ✅ GRAPH + RECENT ACTIVITY (BIG + SMALL ALWAYS) */}
+        {/* ✅ CHART (3 cards width) + RECENT ACTIVITY (1 card width) */}
         <Grid container spacing={3} alignItems="stretch">
-          {/* ✅ Graph big section */}
-          <Grid item xs={12} md={8}>
+          {/* Chart = 3/4 width */}
+          <Grid size={{ xs: 12, md: 9 }}>
             <Card
               sx={{
                 borderRadius: 3,
@@ -231,8 +262,8 @@ export default function Dashboard() {
             </Card>
           </Grid>
 
-          {/* ✅ Recent Activity small section */}
-          <Grid item xs={12} md={4}>
+          {/* Recent Activity = 1/4 width */}
+          <Grid size={{ xs: 12, md: 3 }}>
             <Card
               sx={{
                 borderRadius: 3,
@@ -251,9 +282,7 @@ export default function Dashboard() {
                       <Box display="flex" alignItems="center" gap={2}>
                         {item.icon}
                         <Box>
-                          <Typography fontWeight={700}>
-                            {item.title}
-                          </Typography>
+                          <Typography fontWeight={700}>{item.title}</Typography>
                           <Typography variant="body2" color="text.secondary">
                             {item.time}
                           </Typography>

@@ -10,22 +10,17 @@ export default function MainLayout({ children }) {
       <Sidebar open={open} setOpen={setOpen} />
       <PageHeader open={open} setOpen={setOpen} />
 
-      {/* MAIN CONTENT (FULL PAGE WIDTH + SCROLL ENABLED) */}
       <main
         style={{
           marginLeft: open ? 240 : 70,
           marginTop: 80,
           padding: 16,
           transition: "all 0.3s ease",
-
           backgroundColor: "#F4FBF7",
-
           height: "calc(100vh - 80px)",
           width: "auto",
-
           overflowY: "auto",
           overflowX: "hidden",
-
           boxSizing: "border-box",
         }}
       >

@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import MainLayout from "../layout/MainLayout";
 import {
   Box,
@@ -6,59 +5,108 @@ import {
   Grid,
   Card,
   CardContent,
-  Button,
   Chip,
   Table,
+  TableBody,
+  TableCell,
   TableHead,
   TableRow,
-  TableCell,
-  TableBody,
-  IconButton,
   Stack,
 } from "@mui/material";
 
-// Icons
-import GavelIcon from "@mui/icons-material/Gavel";
-import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+//Icons
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import TrackChangesIcon from "@mui/icons-material/TrackChanges";
+import PaidIcon from "@mui/icons-material/Paid";
+import GroupsIcon from "@mui/icons-material/Groups";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import TodayIcon from "@mui/icons-material/Today";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
+import EventNoteIcon from "@mui/icons-material/EventNote";
 
-const BRAND_GREEN = "#1B3A2F";
-const LIGHT_GREEN_BG = "#F4FBF7";
-const ACCENT_GREEN = "#76B091";
-
-function MetricCard({ title, value, subtitle, percent }) {
+function MetricCard({
+  title,
+  value,
+  subtitle,
+  chipLeft,
+  chipRight,
+  icon,
+}) {
   return (
-    <Card sx={{ borderRadius: 3, boxShadow: "0px 4px 20px rgba(0,0,0,0.04)", height: "100%" }}>
-      <CardContent sx={{ p: 2.5 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="body2" color="text.secondary" fontWeight={500}>
-            {title}
-          </Typography>
-          <FiberManualRecordIcon sx={{ fontSize: 14, color: ACCENT_GREEN }} />
-        </Stack>
+    <Card
+      sx={{
+        borderRadius: 3,
+        boxShadow: "0px 10px 30px rgba(0,0,0,0.06)",
+        height: "100%",
+      }}
+    >
+      <CardContent sx={{ p: 3 }}>
+        {/* Title_Icon_smallcircle */}
+        <Box display="flex" alignItems="center" justifyContent="space-between">
+          <Box display="flex" alignItems="center" gap={1}>
+            {icon}
+            <Typography variant="body1" fontWeight={600}>
+              {title}
+            </Typography>
+          </Box>
 
-        <Typography variant="h3" fontWeight="bold" sx={{ mb: 1 }}>
+          {/* right green dot */}
+          <Box
+            sx={{
+              width: 18,
+              height: 18,
+              borderRadius: "50%",
+              border: "2px solid #4CAF50",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Box
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                bgcolor: "#4CAF50",
+              }}
+            />
+          </Box>
+        </Box>
+
+        {/* Big Value */}
+        <Typography variant="h3" fontWeight="bold" sx={{ mt: 3, mb: 2 }}>
           {value}
         </Typography>
 
+        {/* Bottom row */}
         <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="body2" color="text.secondary">
             {subtitle}
           </Typography>
-          <Stack direction="row" spacing={0.5}>
-            <Chip 
-              label="~ +0 today" 
-              size="small" 
-              sx={{ height: 20, fontSize: "0.65rem", bgcolor: "#F1F8F5", color: ACCENT_GREEN, borderRadius: 1 }} 
+
+          <Stack direction="row" spacing={1}>
+            <Chip
+              icon={<TodayIcon sx={{ fontSize: 16 }} />}
+              label={chipLeft}
+              size="small"
+              sx={{
+                bgcolor: "#E8F5E9",
+                color: "#2E7D32",
+                fontWeight: 600,
+                borderRadius: 10,
+              }}
             />
-            <Chip 
-              icon={<TrendingUpIcon style={{ fontSize: 12, color: ACCENT_GREEN }} />} 
-              label={percent} 
-              size="small" 
-              sx={{ height: 20, fontSize: "0.65rem", bgcolor: "#F1F8F5", color: ACCENT_GREEN, borderRadius: 1 }} 
+            <Chip
+              icon={<ArrowUpwardIcon sx={{ fontSize: 16 }} />}
+              label={chipRight}
+              size="small"
+              sx={{
+                bgcolor: "#E8F5E9",
+                color: "#2E7D32",
+                fontWeight: 600,
+                borderRadius: 10,
+              }}
             />
           </Stack>
         </Box>
@@ -67,139 +115,145 @@ function MetricCard({ title, value, subtitle, percent }) {
   );
 }
 
-export default function InvestorRelation() {
-  const [items, setItems] = useState([
-    { req: "Privacy Policy Update", cat: "Regulatory", due: "Jan 15, 2026", priority: "High", status: "Pending" },
-    { req: "Employment Contracts", cat: "Employment", due: "Jan 31, 2027", priority: "Medium", status: "Completed" },
-    { req: "Trademark Filing", cat: "IP", due: "Feb 28, 2026", priority: "High", status: "In Progress" },
-    { req: "Tax Registration", cat: "Corporate", due: "Jan 31, 2026", priority: "Critical", status: "Pending" },
-  ]);
-
+export default function FundraisingTracker() {
   return (
     <MainLayout>
       <Box
         sx={{
-          bgcolor: LIGHT_GREEN_BG,
           minHeight: "100vh",
-          p: { xs: 2, md: 4 },
-          overflowY: "auto", // Allows vertical scrolling
+          px: { xs: 2, md: 4 },
+          py: 3,
+          bgcolor: "#F4FBF7",
         }}
       >
-        {/* PAGE HEADER */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-          <Box display="flex" alignItems="center" gap={1.5}>
-            <GavelIcon sx={{ color: BRAND_GREEN, fontSize: 28 }} />
-            <Typography variant="h5" fontWeight="bold" sx={{ color: BRAND_GREEN }}>
-              Legal Compliance
-            </Typography>
-          </Box>
-
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            sx={{
-              bgcolor: BRAND_GREEN,
-              textTransform: "none",
-              borderRadius: 2,
-              px: 3,
-              fontWeight: 600,
-              "&:hover": { bgcolor: "#142b23" },
-            }}
-          >
-            Add Item
-          </Button>
+        {/* PAGE TITLE */}
+        <Box display="flex" alignItems="center" gap={1} mb={3}>
+          <TrendingUpIcon sx={{ color: "#2E7D32" }} />
+          <Typography variant="h5" fontWeight="bold">
+            Fundraising Tracker
+          </Typography>
         </Box>
 
         {/* METRIC CARDS */}
         <Grid container spacing={3} mb={4}>
-          <Grid item xs={12} sm={6} md={3}>
-            <MetricCard title="Total Items" value="12" subtitle="Compliance requirements" percent="0%" />
+          <Grid item xs={12} md={4}>
+            <MetricCard
+              title="Target Amount"
+              value="2.0M"
+              subtitle="Seed Round"
+              chipLeft="+0 today"
+              chipRight="0%"
+              icon={<TrackChangesIcon sx={{ color: "#2E7D32" }} />}
+            />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <MetricCard title="Completed" value="9" subtitle="Up to date" percent="75.0%" />
+
+          <Grid item xs={12} md={4}>
+            <MetricCard
+              title="Amount Raised"
+              value="0.8M"
+              subtitle="37.5% of target"
+              chipLeft="+0 today"
+              chipRight="37.5%"
+              icon={<PaidIcon sx={{ color: "#2E7D32" }} />}
+            />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <MetricCard title="Pending" value="3" subtitle="Needs attention" percent="0%" />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <MetricCard title="Compliance Score" value="75%" subtitle="Overall health" percent="0%" />
+
+          <Grid item xs={12} md={4}>
+            <MetricCard
+              title="Active Investors"
+              value="12"
+              subtitle="In pipeline"
+              chipLeft="+0 today"
+              chipRight="0%"
+              icon={<GroupsIcon sx={{ color: "#2E7D32" }} />}
+            />
           </Grid>
         </Grid>
 
-        {/* COMPLIANCE TABLE */}
-        <Card sx={{ borderRadius: 4, boxShadow: "0px 4px 25px rgba(0,0,0,0.03)", border: "1px solid #F0F0F0" }}>
-          <CardContent sx={{ p: 4 }}>
-            <Typography variant="h6" fontWeight="bold" mb={3} color={BRAND_GREEN}>
-              Compliance Checklist
+        {/* FUNDING ROUNDS TABLE */}
+        <Card
+          sx={{
+            borderRadius: 3,
+            boxShadow: "0px 10px 30px rgba(0,0,0,0.06)",
+          }}
+        >
+          <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+            <Typography variant="h6" fontWeight="bold" mb={2}>
+              Funding Rounds
             </Typography>
 
-            <Box sx={{ overflowX: "auto" }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    {["Requirement", "Category", "Due Date", "Priority", "Status", "Action", "Manage"].map((head) => (
-                      <TableCell key={head} sx={{ fontWeight: 700, color: "#666", borderBottom: "1px solid #F0F0F0", pb: 2 }}>
-                        {head}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: "bold" }}>Round</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Amount</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Target Date</TableCell>
+                </TableRow>
+              </TableHead>
 
-                <TableBody>
-                  {items.map((item, index) => (
-                    <TableRow key={index} sx={{ "&:last-child td": { border: 0 } }}>
-                      <TableCell sx={{ fontWeight: 600, color: "#333" }}>{item.req}</TableCell>
-                      <TableCell sx={{ color: "#444" }}>{item.cat}</TableCell>
-                      <TableCell sx={{ color: "#666" }}>{item.due}</TableCell>
-                      <TableCell sx={{ color: "#444" }}>{item.priority}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={item.status}
-                          size="small"
-                          sx={{
-                            fontWeight: 600,
-                            fontSize: "0.75rem",
-                            bgcolor: 
-                              item.status === "Completed" ? "#D1E7DD" : 
-                              item.status === "In Progress" ? "#FEF3C7" : "#F1F3F5",
-                            color: 
-                              item.status === "Completed" ? "#0F5132" : 
-                              item.status === "In Progress" ? "#92400E" : "#495057",
-                            borderRadius: 1.5,
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          sx={{
-                            textTransform: "none",
-                            borderRadius: 1.5,
-                            fontWeight: 600,
-                            color: item.status === "In Progress" ? "#D97706" : BRAND_GREEN,
-                            borderColor: "#E0E0E0",
-                            "&:hover": { borderColor: BRAND_GREEN }
-                          }}
-                        >
-                          {item.status === "Completed" ? "View" : item.status === "In Progress" ? "Update" : "Review"}
-                        </Button>
-                      </TableCell>
-                      <TableCell>
-                        <Stack direction="row" spacing={1}>
-                          <IconButton size="small" sx={{ border: "1px solid #E0E0E0", borderRadius: 2, color: BRAND_GREEN }}>
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton size="small" sx={{ border: "1px solid #FAD2D2", borderRadius: 2, color: "#DC3545" }}>
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Box>
+              <TableBody>
+                <TableRow>
+                  <TableCell>Pre-Seed</TableCell>
+                  <TableCell>$0.5M</TableCell>
+                  <TableCell>
+                    <Chip
+                      icon={<CheckCircleIcon sx={{ fontSize: 18 }} />}
+                      label="Completed"
+                      size="small"
+                      sx={{
+                        bgcolor: "#C8E6C9",
+                        color: "#1B5E20",
+                        fontWeight: 600,
+                        borderRadius: 10,
+                        px: 1,
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>Jan 15, 2026</TableCell>
+                </TableRow>
+
+                <TableRow>
+                  <TableCell>Seed</TableCell>
+                  <TableCell>$2.0M</TableCell>
+                  <TableCell>
+                    <Chip
+                      icon={<HourglassBottomIcon sx={{ fontSize: 18 }} />}
+                      label="In Progress"
+                      size="small"
+                      sx={{
+                        bgcolor: "#A5D6A7",
+                        color: "#1B5E20",
+                        fontWeight: 600,
+                        borderRadius: 10,
+                        px: 1,
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>Jun 30, 2026</TableCell>
+                </TableRow>
+
+                <TableRow>
+                  <TableCell>Series A</TableCell>
+                  <TableCell>$5.0M</TableCell>
+                  <TableCell>
+                    <Chip
+                      icon={<EventNoteIcon sx={{ fontSize: 18 }} />}
+                      label="Planned"
+                      size="small"
+                      sx={{
+                        bgcolor: "#E0E0E0",
+                        color: "#424242",
+                        fontWeight: 600,
+                        borderRadius: 10,
+                        px: 1,
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>Mar 15, 2027</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       </Box>

@@ -129,8 +129,8 @@ function ActionButton({ action, onClick }) {
     action === "Review"
       ? "#1B5E20"
       : action === "View"
-      ? "#607D8B"
-      : "#F9A825"; // Update yellow
+        ? "#607D8B"
+        : "#F9A825"; // Update yellow
 
   return (
     <Button
@@ -160,8 +160,8 @@ function PriorityText({ priority }) {
           priority === "Critical"
             ? "#D32F2F"
             : priority === "High"
-            ? "#1B5E20"
-            : "#555",
+              ? "#1B5E20"
+              : "#555",
       }}
     >
       {priority}
@@ -331,15 +331,20 @@ export default function LegalCompliance() {
               textTransform: "none",
               px: 2.5,
               "&:hover": { bgcolor: "#145017" },
-            }}
-          >
+            }}>
             Add Item
           </Button>
         </Box>
 
-        {/* ===== METRIC CARDS ===== */}
-        <Grid container spacing={3} mb={4}>
-          <Grid item xs={12} md={3}>
+        {/* ===== METRIC CARDS (Always single row) ===== */}
+        <Grid
+          container
+          spacing={2}
+          mb={4}
+          wrap="nowrap"
+          sx={{ overflowX: "auto" }} // optional: scroll if very small screen
+        >
+          <Grid item xs={3} sx={{ minWidth: 220 }}>
             <MetricCard
               title="Total Items"
               value={totalItems}
@@ -348,7 +353,7 @@ export default function LegalCompliance() {
             />
           </Grid>
 
-          <Grid item xs={12} md={3}>
+          <Grid item xs={3} sx={{ minWidth: 220 }}>
             <MetricCard
               title="Completed"
               value={completedCount}
@@ -357,7 +362,7 @@ export default function LegalCompliance() {
             />
           </Grid>
 
-          <Grid item xs={12} md={3}>
+          <Grid item xs={3} sx={{ minWidth: 220 }}>
             <MetricCard
               title="Pending"
               value={pendingCount}
@@ -366,7 +371,7 @@ export default function LegalCompliance() {
             />
           </Grid>
 
-          <Grid item xs={12} md={3}>
+          <Grid item xs={3} sx={{ minWidth: 220 }}>
             <MetricCard
               title="Compliance Score"
               value={complianceScore}

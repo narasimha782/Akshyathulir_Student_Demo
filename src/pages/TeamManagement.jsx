@@ -124,8 +124,8 @@ export default function TeamManagement() {
     return new Set(members.map((m) => m.department)).size;
   }, [members]);
 
-  const newHiresThisMonth = 2; 
-  const growthRate = "0%"; 
+  const newHiresThisMonth = 2;
+  const growthRate = "0%";
 
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -233,15 +233,13 @@ export default function TeamManagement() {
               textTransform: "none",
               px: 2.5,
               "&:hover": { bgcolor: "#145017" },
-            }}
-          >
+            }}>
             Add Member
           </Button>
         </Box>
-
-        {/* ===== METRIC CARDS ===== */}
-        <Grid container spacing={3} mb={4}>
-          <Grid item xs={12} md={3}>
+        {/*  METRIC CARDS  */}
+        <Grid container spacing={2} sx={{ mb: 4, flexWrap: "nowrap" }}>
+          <Grid item sx={{ flex: 1, minWidth: 0 }}>
             <MetricCard
               title="Total Team Members"
               value={members.length}
@@ -249,7 +247,7 @@ export default function TeamManagement() {
             />
           </Grid>
 
-          <Grid item xs={12} md={3}>
+          <Grid item sx={{ flex: 1, minWidth: 0 }}>
             <MetricCard
               title="New Hires"
               value={newHiresThisMonth}
@@ -257,24 +255,19 @@ export default function TeamManagement() {
             />
           </Grid>
 
-          <Grid item xs={12} md={3}>
+          <Grid item sx={{ flex: 1, minWidth: 0 }}>
             <MetricCard
               title="Departments"
               value={departmentsCount}
-              subtitle="Active departments"
-            />
-          </Grid>
-
-          <Grid item xs={12} md={3}>
+              subtitle="Active departments"/></Grid>
+          <Grid item sx={{ flex: 1, minWidth: 0 }}>
             <MetricCard
               title="Growth Rate"
               value={growthRate}
-              subtitle="Team growth this quarter"
-            />
+              subtitle="Team growth this quarter"/>
           </Grid>
         </Grid>
-
-        {/* ===== TABLE CARD ===== */}
+        {/* TABLE CARD */}
         <Card
           sx={{
             borderRadius: 3,

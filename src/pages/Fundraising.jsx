@@ -14,7 +14,7 @@ import {
   Stack,
 } from "@mui/material";
 
-// ✅ MUI Icons
+//Icons
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrackChangesIcon from "@mui/icons-material/TrackChanges";
 import PaidIcon from "@mui/icons-material/Paid";
@@ -42,7 +42,7 @@ function MetricCard({
       }}
     >
       <CardContent sx={{ p: 3 }}>
-        {/* Title + Icon + small circle */}
+        {/* Title_Icon_smallcircle */}
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Box display="flex" alignItems="center" gap={1}>
             {icon}
