@@ -1,169 +1,188 @@
-import React, { useRef } from "react";
 import {
   Box,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Tooltip,
-  Divider,
+  Typography,
 } from "@mui/material";
-import { useNavigate, useLocation } from "react-router-dom";
-/* Icons */
+import { useNavigate } from "react-router-dom";
+
+// ICONS
 import DashboardIcon from "@mui/icons-material/Dashboard";
-import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
-import PeopleIcon from "@mui/icons-material/People";
-import FlagIcon from "@mui/icons-material/Flag";
-import HandshakeIcon from "@mui/icons-material/Handshake";
-import MapIcon from "@mui/icons-material/Map";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import GroupIcon from "@mui/icons-material/Group";
+import TimelineIcon from "@mui/icons-material/Timeline";
 import GavelIcon from "@mui/icons-material/Gavel";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import LogoutIcon from "@mui/icons-material/Logout";
+import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-// Configurable constants
-const DRAWER_WIDTH_OPEN = 240;
-const DRAWER_WIDTH_CLOSED = 70;
-const icons = {
-  Dashboard: <DashboardIcon />,
-  Fundraising: <MonetizationOnIcon />,
-  "Team Management": <PeopleIcon />,
-  "Milestone Tracking": <FlagIcon />,
-  "Investor Relations": <HandshakeIcon />,
-  "Product Roadmap": <MapIcon />,
-  "Profile": <AccountCircleIcon />,
-  "Legal Compliance": <GavelIcon />,
-};
-// Assuming menuItems comes from your config
-import { menuItems } from "../config/menuConfig";
+import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
+import DescriptionIcon from "@mui/icons-material/Description";
 
 export default function Sidebar({ open, setOpen }) {
   const navigate = useNavigate();
-  const location = useLocation();
-  const timerRef = useRef(null);
-
-  // Open sidebar on hover
-  const handleMouseEnter = () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    setOpen(true);
-  };
-  // Close sidebar after a small delay
-  const handleMouseLeave = () => {
-    timerRef.current = setTimeout(() => {
-      setOpen(false);
-    }, 150);
-  };
 
   return (
     <Box
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
       sx={{
+        width: open ? 250 : 64,
+        height: "100vh",
+        bgcolor: "#1f4d3a",
+        color: "white",
         position: "fixed",
         top: 0,
         left: 0,
-        height: "100vh",
-        width: open ? DRAWER_WIDTH_OPEN : DRAWER_WIDTH_CLOSED,
-        bgcolor: "#1b4332",
-        color: "#fff",
-        transition: "width 0.25s ease-in-out",
-        overflowX: "hidden",
         display: "flex",
         flexDirection: "column",
+        transition: "width 0.25s ease",
+        overflowX: "hidden",
         zIndex: 1200,
-        boxShadow: open ? "5px 0px 15px rgba(0,0,0,0.3)" : "none",
       }}
     >
-      {/* Logo Section */}
+      {/* LOGO */}
       <Box
         sx={{
           height: 64,
+          px: 2,
           display: "flex",
           alignItems: "center",
           justifyContent: open ? "flex-start" : "center",
-          px: open ? 3 : 0,
-          fontSize: "1.2rem",
-          fontWeight: 900,
-          letterSpacing: "1.5px",
-          whiteSpace: "nowrap",
+          gap: 1.5,
         }}
       >
-        {open ? "STARTUP" : "S"}
+        <RocketLaunchIcon sx={{ fontSize: 32 }} />
+        <Typography
+          variant="h6"
+          fontWeight="bold"
+          noWrap
+          sx={{
+            opacity: open ? 1 : 0,
+            transition: "opacity 0.2s ease",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Startup
+        </Typography>
       </Box>
 
-      <Divider sx={{ bgcolor: "rgba(255,255,255,0.3)", mx: 1 }} />
+      {/* MENU ITEMS */}
+      <List sx={{ flexGrow: 1 }}>
+        <MenuItem
+          open={open}
+          icon={<DashboardIcon />}
+          text="Dashboard"
+          onClick={() => navigate("/")}
+        />
 
-      {/* Main Menu */}
-      <List sx={{ flexGrow: 1, pt: 2 }}>
-        {menuItems.map((item) => {
-          const active = location.pathname === item.path;
-          return (
-            <Tooltip
-              key={item.text}
-              title={!open ? item.text : ""}
-              placement="right"
-              arrow
-            >
-              <ListItemButton
-                onClick={() => navigate(item.path)}
-                sx={{
-                  mx: 1,
-                  my: 0.5,
-                  borderRadius: 1,
-                  bgcolor: active ? "#2d6a4f" : "transparent",
-                  "&:hover": { bgcolor: "rgba(45, 106, 79, 1)" },
-                  justifyContent: open ? "initial" : "center",
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    color: "#fff",
-                    minWidth: 0,
-                    mr: open ? 2 : "auto",
-                    justifyContent: "center",
-                  }}
-                >
-                  {icons[item.text] || <DashboardIcon />}
-                </ListItemIcon>
-                {open && (
-                  <ListItemText
-                    primary={item.text}
-                    primaryTypographyProps={{
-                      fontWeight: active ? 700 : 500,
-                      noWrap: true,
-                    }}
-                  />
-                )}
-              </ListItemButton>
-            </Tooltip>
-          );
-        })}
+        <MenuItem
+          open={open}
+          icon={<AccountCircleIcon />}
+          text="Profile"
+          onClick={() => navigate("/profile/view")}
+        />
+
+        <MenuItem
+          open={open}
+          icon={<TrendingUpIcon />}
+          text="Fundraising Tracker"
+          onClick={() => navigate("/fundraising")}
+        />
+
+        <MenuItem
+          open={open}
+          icon={<GroupIcon />}
+          text="Team Management"
+          onClick={() => navigate("/team")}
+        />
+
+        <MenuItem
+          open={open}
+          icon={<PeopleAltIcon />}
+          text="My Clients"
+          onClick={() => navigate("/clients")}
+        />
+
+        <MenuItem
+          open={open}
+          icon={<DescriptionIcon />}
+          text="Schemes"
+          onClick={() => navigate("/schemes")}
+        />
+
+        <MenuItem
+          open={open}
+          icon={<TimelineIcon />}
+          text="Milestone Tracking"
+          onClick={() => navigate("/milestones")}
+        />
+
+        <MenuItem
+          open={open}
+          icon={<HelpOutlineIcon />}
+          text="Product Roadmap"
+          onClick={() => navigate("/roadmap")}
+        />
+
+        <MenuItem
+          open={open}
+          icon={<GavelIcon />}
+          text="Legal Compliance"
+          onClick={() => navigate("/legal")}
+        />
       </List>
 
-      {/* Logout Section at the Bottom */}
-      <Box sx={{ mt: "auto", pb: 2 }}>
-        <Divider sx={{ bgcolor: "rgba(255,255,255,0.3)", mx: 1, mb: 1 }} />
-        <Tooltip title={!open ? "Logout" : ""} placement="right" arrow>
-          <ListItemButton
-            sx={{
-              mx: 1,
-              borderRadius: 1,
-              justifyContent: open ? "initial" : "center",
-              "&:hover": { bgcolor: "rgba(214, 40, 40, 0.4)" },
-            }}
-          >
-            <ListItemIcon
-              sx={{
-                color: "#fff",
-                minWidth: 0,
-                mr: open ? 2 : "auto",
-                justifyContent: "center",
-              }}
-            >
-              <LogoutIcon />
-            </ListItemIcon>
-            {open && <ListItemText primary="Logout" />}
-          </ListItemButton>
-        </Tooltip>
+      {/* LOGOUT */}
+      <Box sx={{ mb: 2 }}>
+        <MenuItem
+          open={open}
+          icon={<LogoutIcon />}
+          text="Logout"
+          onClick={() => navigate("/")}
+        />
       </Box>
     </Box>
+  );
+}
+
+/* ================= MENU ITEM COMPONENT ================= */
+
+function MenuItem({ icon, text, onClick, open }) {
+  return (
+    <ListItemButton
+      onClick={onClick}
+      sx={{
+        height: 48,
+        px: 2,
+        justifyContent: open ? "flex-start" : "center",
+        transition: "all 0.2s ease",
+        "&:hover": {
+          bgcolor: "rgba(255,255,255,0.1)",
+        },
+      }}
+    >
+      <ListItemIcon
+        sx={{
+          color: "white",
+          minWidth: 0,
+          mr: open ? 2 : 0,
+          justifyContent: "center",
+        }}
+      >
+        {icon}
+      </ListItemIcon>
+
+      <ListItemText
+        primary={text}
+        sx={{
+          opacity: open ? 1 : 0,
+          whiteSpace: "nowrap",
+          transition: "opacity 0.2s ease",
+        }}
+      />
+    </ListItemButton>
   );
 }

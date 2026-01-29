@@ -1,10 +1,28 @@
-import React from "react";
-import MainLayout from "../layout/MainLayout";
+import { Outlet } from "react-router-dom";
+import { Box } from "@mui/material";
+import { useState } from "react";
+import Sidebar from "../components/Sidebar";
+import Header from "../components/Header";
 
-export default function Dashboard() {
+export default function DashboardLayout() {
+  const [open, setOpen] = useState(false);
+
   return (
-    <MainLayout>
-      <h2>Dashboard Page</h2>
-    </MainLayout>
+    <Box sx={{ display: "flex" }}>
+      <Sidebar open={open} setOpen={setOpen} />
+
+      <Box
+        sx={{
+          flexGrow: 1,
+          ml: open ? "250px" : "64px",
+          transition: "margin-left 0.25s ease",
+        }}
+      >
+        <Header />
+        <Box sx={{ p: 3 }}>
+          <Outlet />
+        </Box>
+      </Box>
+    </Box>
   );
 }

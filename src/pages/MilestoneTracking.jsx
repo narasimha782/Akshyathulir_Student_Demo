@@ -1,6 +1,4 @@
-import React, { useMemo, useState } from "react";
-import MainLayout from "../layout/MainLayout";
-
+import { useState } from "react";
 import {
   Box,
   Typography,
@@ -8,13 +6,13 @@ import {
   Card,
   CardContent,
   Chip,
-  Stack,
   Button,
   Table,
-  TableBody,
-  TableCell,
   TableHead,
   TableRow,
+  TableCell,
+  TableBody,
+  LinearProgress,
   IconButton,
   Dialog,
   DialogTitle,
@@ -22,156 +20,24 @@ import {
   DialogActions,
   TextField,
   MenuItem,
-  LinearProgress,
 } from "@mui/material";
 
-// MUI Icons
-import TaskAltIcon from "@mui/icons-material/TaskAlt";
-import AddIcon from "@mui/icons-material/Add";
-import TodayIcon from "@mui/icons-material/Today";
-import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
-import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-
-function MetricCard({ title, value, subtitle, percent = "0%" }) {
-  return (
-    <Card
-      sx={{
-        borderRadius: 3,
-        boxShadow: "0px 10px 30px rgba(0,0,0,0.06)",
-        height: "100%",
-        width: "100%",
-      }}
-    >
-      <CardContent sx={{ p: 3 }}>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Typography
-            fontWeight={600}
-            sx={{
-              minWidth: 0,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {title}
-          </Typography>
-
-          <Box
-            sx={{
-              width: 18,
-              height: 18,
-              borderRadius: "50%",
-              border: "2px solid #4CAF50",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <FiberManualRecordIcon sx={{ fontSize: 10, color: "#4CAF50" }} />
-          </Box>
-        </Box>
-
-        <Typography
-          fontWeight="bold"
-          sx={{
-            mt: 3,
-            mb: 2,
-            lineHeight: 1.1,
-            fontSize: { xs: "1.6rem", sm: "2rem", md: "2.4rem" },
-          }}
-        >
-          {value}
-        </Typography>
-
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{
-              minWidth: 0,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              pr: 1,
-            }}
-          >
-            {subtitle}
-          </Typography>
-
-          <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
-            <Chip
-              icon={<TodayIcon sx={{ fontSize: 16 }} />}
-              label="+0 today"
-              size="small"
-              sx={{
-                bgcolor: "#E8F5E9",
-                color: "#2E7D32",
-                fontWeight: 600,
-                borderRadius: 10,
-                display: { xs: "none", sm: "flex" },
-              }}
-            />
-            <Chip
-              icon={<ArrowUpwardIcon sx={{ fontSize: 16 }} />}
-              label={percent}
-              size="small"
-              sx={{
-                bgcolor: "#E8F5E9",
-                color: "#2E7D32",
-                fontWeight: 600,
-                borderRadius: 10,
-              }}
-            />
-          </Stack>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-}
-
-function StatusChip({ status }) {
-  const styles =
-    status === "In Progress"
-      ? { bgcolor: "#A5D6A7", color: "#1B5E20" }
-      : status === "Planning"
-      ? { bgcolor: "#E0E0E0", color: "#424242" }
-      : { bgcolor: "#C8E6C9", color: "#1B5E20" };
-
-  return (
-    <Chip
-      label={status}
-      size="small"
-      sx={{ ...styles, fontWeight: 600, borderRadius: 10, px: 1 }}
-    />
-  );
-}
-
-function PriorityText({ priority }) {
-  return (
-    <Typography
-      fontWeight={500}
-      sx={{
-        color:
-          priority === "Critical"
-            ? "#D32F2F"
-            : priority === "High"
-            ? "#1B5E20"
-            : "#555",
-      }}
-    >
-      {priority}
-    </Typography>
-  );
-}
+import AddIcon from "@mui/icons-material/Add";
+import TimelineIcon from "@mui/icons-material/Timeline";
+import CloseIcon from "@mui/icons-material/Close";
 
 export default function MilestoneTracking() {
+  /* ================= STATE ================= */
+  const [open, setOpen] = useState(false);
+  const [editIndex, setEditIndex] = useState(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteIndex, setDeleteIndex] = useState(null);
+
   const [milestones, setMilestones] = useState([
     {
-      id: 1,
-      milestone: "MVP Launch",
+      title: "MVP Launch",
       category: "Product",
       dueDate: "Dec 31, 2026",
       priority: "High",
@@ -179,8 +45,7 @@ export default function MilestoneTracking() {
       progress: 75,
     },
     {
-      id: 2,
-      milestone: "Seed Funding Close",
+      title: "Seed Funding Close",
       category: "Fundraising",
       dueDate: "Jan 15, 2026",
       priority: "Critical",
@@ -188,8 +53,7 @@ export default function MilestoneTracking() {
       progress: 40,
     },
     {
-      id: 3,
-      milestone: "Team Expansion",
+      title: "Team Expansion",
       category: "Business",
       dueDate: "Feb 1, 2026",
       priority: "Medium",
@@ -198,18 +62,8 @@ export default function MilestoneTracking() {
     },
   ]);
 
-  const totalMilestones = 15;
-  const completedMilestones = 8;
-  const upcomingMilestones = 4;
-  const overdueMilestones = 1;
-
-  const completedPercent = useMemo(() => "53.3%", []);
-
-  const [open, setOpen] = useState(false);
-  const [editId, setEditId] = useState(null);
-
   const [form, setForm] = useState({
-    milestone: "",
+    title: "",
     category: "Product",
     dueDate: "",
     priority: "Medium",
@@ -217,305 +71,279 @@ export default function MilestoneTracking() {
     progress: 0,
   });
 
-  const resetForm = () =>
+  /* ================= ADD ================= */
+  const openAdd = () => {
+    setEditIndex(null);
     setForm({
-      milestone: "",
+      title: "",
       category: "Product",
       dueDate: "",
       priority: "Medium",
       status: "Planning",
       progress: 0,
     });
-
-  const handleOpenAdd = () => {
-    setEditId(null);
-    resetForm();
     setOpen(true);
   };
 
-  const handleOpenEdit = (row) => {
-    setEditId(row.id);
-    setForm({ ...row });
+  /* ================= EDIT ================= */
+  const openEdit = (index) => {
+    setEditIndex(index);
+    setForm({ ...milestones[index], dueDate: "" });
     setOpen(true);
   };
 
-  const handleClose = () => {
-    setOpen(false);
-    setEditId(null);
-    resetForm();
-  };
-
+  /* ================= SAVE ================= */
   const handleSave = () => {
-    if (!form.milestone.trim() || !form.dueDate.trim()) {
-      return alert("Please fill Milestone and Due Date");
-    }
+    const formattedDate =
+      form.dueDate || milestones[editIndex]?.dueDate;
 
-    const progressNumber = Number(form.progress);
+    const updatedMilestone = {
+      ...form,
+      dueDate: formattedDate,
+    };
 
-    if (editId) {
-      setMilestones((prev) =>
-        prev.map((m) =>
-          m.id === editId ? { ...m, ...form, progress: progressNumber } : m
-        )
-      );
+    if (editIndex === null) {
+      setMilestones([...milestones, updatedMilestone]);
     } else {
-      setMilestones((prev) => [
-        { id: Date.now(), ...form, progress: progressNumber },
-        ...prev,
-      ]);
+      const updated = [...milestones];
+      updated[editIndex] = updatedMilestone;
+      setMilestones(updated);
     }
 
-    handleClose();
+    setOpen(false);
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm("Delete this milestone?")) {
-      setMilestones((prev) => prev.filter((m) => m.id !== id));
-    }
+  /* ================= DELETE ================= */
+  const openDeleteDialog = (index) => {
+    setDeleteIndex(index);
+    setDeleteOpen(true);
+  };
+
+  const confirmDelete = () => {
+    setMilestones(milestones.filter((_, i) => i !== deleteIndex));
+    setDeleteOpen(false);
   };
 
   return (
-    <MainLayout>
-      <Box
-        sx={{
-          minHeight: "100vh",
-          px: { xs: 2, md: 4 },
-          py: 3,
-          bgcolor: "#F4FBF7",
-        }}
-      >
-        {/* HEADER */}
-        <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-          <Box display="flex" alignItems="center" gap={1}>
-            <TaskAltIcon sx={{ color: "#2E7D32" }} />
-            <Typography variant="h5" fontWeight="bold">
-              Milestone Tracking
-            </Typography>
-          </Box>
+    <Box>
+      {/* PAGE HEADER */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h5" fontWeight="bold" display="flex" alignItems="center" gap={1}>
+          <TimelineIcon color="success" />
+          Milestone Tracking
+        </Typography>
 
-          <Button
-            onClick={handleOpenAdd}
-            variant="contained"
-            startIcon={<AddIcon />}
-            sx={{
-              bgcolor: "#1B5E20",
-              borderRadius: 2,
-              textTransform: "none",
-              px: 2.5,
-              "&:hover": { bgcolor: "#145017" },
-            }}
-          >
-            Add Milestone
-          </Button>
-        </Box>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          sx={{ bgcolor: "#1f4d3a" }}
+          onClick={openAdd}
+        >
+          Add Milestone
+        </Button>
+      </Box>
 
-        {/* ✅ METRIC CARDS (Always 1 row + compress + NO scroll) */}
-        <Grid container spacing={2} sx={{ mb: 4, flexWrap: "nowrap", width: "100%" }}>
-          <Grid item sx={{ flex: 1, minWidth: 0 }}>
-            <MetricCard
-              title="Total Milestones"
-              value={totalMilestones}
-              subtitle="This quarter"
-              percent="0%"
-            />
-          </Grid>
-
-          <Grid item sx={{ flex: 1, minWidth: 0 }}>
-            <MetricCard
-              title="Completed"
-              value={completedMilestones}
-              subtitle="On schedule"
-              percent={completedPercent}
-            />
-          </Grid>
-
-          <Grid item sx={{ flex: 1, minWidth: 0 }}>
-            <MetricCard
-              title="Upcoming"
-              value={upcomingMilestones}
-              subtitle="Next 30 days"
-              percent="0%"
-            />
-          </Grid>
-
-          <Grid item sx={{ flex: 1, minWidth: 0 }}>
-            <MetricCard
-              title="Overdue"
-              value={overdueMilestones}
-              subtitle="Needs attention"
-              percent="0%"
-            />
-          </Grid>
+      {/* METRIC CARDS — UNCHANGED */}
+      <Grid container spacing={3} mb={4}>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Card sx={{ borderRadius: 3 }}>
+            <CardContent>
+              <Typography>Total Milestones</Typography>
+              <Typography variant="h3" fontWeight="bold" sx={{ color: "#1f4d3a", my: 1 }}>
+                15
+              </Typography>
+              <Typography color="text.secondary">This quarter</Typography>
+              <Box display="flex" gap={1} mt={2}>
+                <Chip label="+0 today" color="success" size="small" />
+                <Chip label="↑ 0%" color="success" size="small" variant="outlined" />
+              </Box>
+            </CardContent>
+          </Card>
         </Grid>
 
-        {/* TABLE CARD */}
-        <Card sx={{ borderRadius: 3, boxShadow: "0px 10px 30px rgba(0,0,0,0.06)", mb: 4 }}>
-          <CardContent sx={{ p: { xs: 2, md: 3 }, overflowX: "auto" }}>
-            <Typography variant="h6" fontWeight="bold" mb={2}>
-              Current Milestones
-            </Typography>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Card sx={{ borderRadius: 3 }}>
+            <CardContent>
+              <Typography>Completed</Typography>
+              <Typography variant="h3" fontWeight="bold" sx={{ color: "#1f4d3a", my: 1 }}>
+                8
+              </Typography>
+              <Typography color="text.secondary">On schedule</Typography>
+              <Box display="flex" gap={1} mt={2}>
+                <Chip label="+0 today" color="success" size="small" />
+                <Chip label="↑ 53.3%" color="success" size="small" variant="outlined" />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
 
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: "bold" }}>Milestone</TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }}>Category</TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }}>Due Date</TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }}>Priority</TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }}>Progress</TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }}>Actions</TableCell>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Card sx={{ borderRadius: 3 }}>
+            <CardContent>
+              <Typography>Upcoming</Typography>
+              <Typography variant="h3" fontWeight="bold" sx={{ color: "#1f4d3a", my: 1 }}>
+                4
+              </Typography>
+              <Typography color="text.secondary">Next 30 days</Typography>
+              <Box display="flex" gap={1} mt={2}>
+                <Chip label="+0 today" color="success" size="small" />
+                <Chip label="↑ 0%" color="success" size="small" variant="outlined" />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Card sx={{ borderRadius: 3 }}>
+            <CardContent>
+              <Typography>Overdue</Typography>
+              <Typography variant="h3" fontWeight="bold" sx={{ color: "#1f4d3a", my: 1 }}>
+                1
+              </Typography>
+              <Typography color="text.secondary">Needs attention</Typography>
+              <Box display="flex" gap={1} mt={2}>
+                <Chip label="+0 today" color="success" size="small" />
+                <Chip label="↑ 0%" color="success" size="small" variant="outlined" />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* TABLE — SAME STRUCTURE */}
+      <Card>
+        <CardContent>
+          <Typography variant="h6" mb={2}>Current Milestones</Typography>
+
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell><b>Milestone</b></TableCell>
+                <TableCell><b>Category</b></TableCell>
+                <TableCell><b>Due Date</b></TableCell>
+                <TableCell><b>Priority</b></TableCell>
+                <TableCell><b>Status</b></TableCell>
+                <TableCell><b>Progress</b></TableCell>
+                <TableCell><b>Actions</b></TableCell>
+              </TableRow>
+            </TableHead>
+
+            <TableBody>
+              {milestones.map((m, index) => (
+                <TableRow key={index}>
+                  <TableCell>{m.title}</TableCell>
+                  <TableCell>{m.category}</TableCell>
+                  <TableCell>{m.dueDate}</TableCell>
+                  <TableCell>{m.priority}</TableCell>
+                  <TableCell>
+                    <Chip label={m.status} color="success" size="small" />
+                  </TableCell>
+                  <TableCell sx={{ width: 160 }}>
+                    <LinearProgress variant="determinate" value={m.progress} sx={{ height: 8, borderRadius: 5 }} />
+                    <Typography variant="body2" mt={0.5}>{m.progress}.0%</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <IconButton color="success" onClick={() => openEdit(index)}>
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton color="error" onClick={() => openDeleteDialog(index)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
                 </TableRow>
-              </TableHead>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-              <TableBody>
-                {milestones.map((row) => (
-                  <TableRow key={row.id} hover>
-                    <TableCell>{row.milestone}</TableCell>
-                    <TableCell>{row.category}</TableCell>
-                    <TableCell>{row.dueDate}</TableCell>
+      {/* ADD / EDIT DIALOG */}
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ bgcolor: "#1f4d3a", color: "#fff" }}>
+          {editIndex === null ? "Add Milestone" : "Edit Milestone"}
+          <IconButton onClick={() => setOpen(false)} sx={{ position: "absolute", right: 8, top: 8, color: "#fff" }}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
 
-                    <TableCell>
-                      <PriorityText priority={row.priority} />
-                    </TableCell>
+        <DialogContent sx={{ mt: 2 }}>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, md: 8 }}>
+              <TextField fullWidth label="Title" value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            </Grid>
 
-                    <TableCell>
-                      <StatusChip status={row.status} />
-                    </TableCell>
-
-                    <TableCell sx={{ minWidth: 200 }}>
-                      <Box sx={{ width: 120 }}>
-                        <LinearProgress
-                          variant="determinate"
-                          value={row.progress}
-                          sx={{
-                            height: 8,
-                            borderRadius: 10,
-                            bgcolor: "#DDEEE3",
-                            "& .MuiLinearProgress-bar": {
-                              bgcolor: "#1B5E20",
-                              borderRadius: 10,
-                            },
-                          }}
-                        />
-                      </Box>
-                      <Typography variant="body2" fontWeight={600} mt={0.5}>
-                        {row.progress}%
-                      </Typography>
-                    </TableCell>
-
-                    <TableCell>
-                      <Stack direction="row" spacing={1}>
-                        <IconButton
-                          onClick={() => handleOpenEdit(row)}
-                          sx={{ border: "1px solid #A5D6A7", borderRadius: 2 }}
-                        >
-                          <EditIcon sx={{ color: "#1B5E20" }} />
-                        </IconButton>
-
-                        <IconButton
-                          onClick={() => handleDelete(row.id)}
-                          sx={{ border: "1px solid #EEEEEE", borderRadius: 2 }}
-                        >
-                          <DeleteIcon sx={{ color: "#D32F2F" }} />
-                        </IconButton>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        {/* DIALOG */}
-        <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-          <DialogTitle sx={{ fontWeight: "bold" }}>
-            {editId ? "Edit Milestone" : "Add Milestone"}
-          </DialogTitle>
-
-          <DialogContent sx={{ pt: 1 }}>
-            <Stack spacing={2} mt={1}>
-              <TextField
-                label="Milestone"
-                fullWidth
-                value={form.milestone}
-                onChange={(e) => setForm({ ...form, milestone: e.target.value })}
-              />
-
-              <TextField
-                label="Category"
-                select
-                fullWidth
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-              >
-                {["Product", "Fundraising", "Business", "Legal"].map((c) => (
-                  <MenuItem key={c} value={c}>
-                    {c}
-                  </MenuItem>
-                ))}
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField select fullWidth label="Category" value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}>
+                <MenuItem value="Product">Product</MenuItem>
+                <MenuItem value="Fundraising">Fundraising</MenuItem>
+                <MenuItem value="Business">Business</MenuItem>
               </TextField>
+            </Grid>
 
-              <TextField
-                label="Due Date"
-                fullWidth
-                placeholder="Dec 31, 2026"
-                value={form.dueDate}
-                onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-              />
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField type="date" fullWidth label="Due Date" InputLabelProps={{ shrink: true }}
+                onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
+            </Grid>
 
-              <TextField
-                label="Priority"
-                select
-                fullWidth
-                value={form.priority}
-                onChange={(e) => setForm({ ...form, priority: e.target.value })}
-              >
-                {["Critical", "High", "Medium", "Low"].map((p) => (
-                  <MenuItem key={p} value={p}>
-                    {p}
-                  </MenuItem>
-                ))}
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField select fullWidth label="Priority" value={form.priority}
+                onChange={(e) => setForm({ ...form, priority: e.target.value })}>
+                <MenuItem value="Low">Low</MenuItem>
+                <MenuItem value="Medium">Medium</MenuItem>
+                <MenuItem value="High">High</MenuItem>
+                <MenuItem value="Critical">Critical</MenuItem>
               </TextField>
+            </Grid>
 
-              <TextField
-                label="Status"
-                select
-                fullWidth
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-              >
-                {["Planning", "In Progress", "Completed"].map((s) => (
-                  <MenuItem key={s} value={s}>
-                    {s}
-                  </MenuItem>
-                ))}
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField select fullWidth label="Status" value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value })}>
+                <MenuItem value="Planning">Planning</MenuItem>
+                <MenuItem value="In Progress">In Progress</MenuItem>
+                <MenuItem value="Completed">Completed</MenuItem>
               </TextField>
+            </Grid>
 
-              <TextField
-                label="Progress (%)"
-                type="number"
-                fullWidth
-                value={form.progress}
-                onChange={(e) => setForm({ ...form, progress: e.target.value })}
-                inputProps={{ min: 0, max: 100 }}
-              />
-            </Stack>
-          </DialogContent>
+            <Grid size={{ xs: 12 }}>
+              <TextField fullWidth type="number" label="Progress (%)" value={form.progress}
+                onChange={(e) => setForm({ ...form, progress: Number(e.target.value) })} />
+            </Grid>
+          </Grid>
+        </DialogContent>
 
-          <DialogActions sx={{ p: 2 }}>
-            <Button onClick={handleClose}>Cancel</Button>
-            <Button
-              onClick={handleSave}
-              variant="contained"
-              sx={{ bgcolor: "#1B5E20", "&:hover": { bgcolor: "#145017" } }}
-            >
-              {editId ? "Update" : "Save"}
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
-    </MainLayout>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="contained" sx={{ bgcolor: "#1f4d3a" }} onClick={handleSave}>
+            {editIndex === null ? "Add Milestone" : "Update Milestone"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* DELETE CONFIRMATION */}
+      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ bgcolor: "#1f4d3a", color: "#fff" }}>
+          Confirm Delete
+        </DialogTitle>
+
+        <DialogContent sx={{ mt: 2 }}>
+          <Typography>Are you sure you want to delete this milestone?</Typography>
+          <Typography fontWeight="bold" mt={2}>
+            {milestones[deleteIndex]?.title}
+          </Typography>
+          <Typography color="text.secondary" mt={1}>
+            This action cannot be undone.
+          </Typography>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setDeleteOpen(false)}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={confirmDelete}>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }

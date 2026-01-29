@@ -1,1118 +1,724 @@
-import React, { useState, useEffect } from "react";
-import MainLayout from "../layout/MainLayout";
-
+import { useState, useEffect } from "react";
 import {
-  Container,
-  Typography,
   Box,
+  Typography,
+  Grid,
   Card,
   CardContent,
-  TextField,
-  MenuItem,
-  FormControl,
-  FormLabel,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
+  Chip,
+  Paper,
+  Divider,
+  Avatar,
   Button,
-  CircularProgress,
-  ThemeProvider,
-  createTheme,
-  CssBaseline,
-  FormHelperText,
 } from "@mui/material";
 
-const theme = createTheme({
-  typography: {
-    h1: { fontSize: "34px" },
-    h5: { fontSize: "20px" },
-    h6: { fontSize: "16px" },
-    body1: { fontSize: "16px" },
-    body2: { fontSize: "14px" },
-    button: { fontSize: "15px" },
-  },
-  components: {
-    MuiTextField: {
-      styleOverrides: {
-        root: { width: "100%" },
-      },
-    },
-    MuiInputBase: {
-      styleOverrides: {
-        input: { fontSize: "16px" },
-      },
-    },
-    MuiInputLabel: {
-      styleOverrides: {
-        root: { fontSize: "14px" },
-      },
-    },
-  },
-});
-
-// Helper for row layout
-const FormRow = ({ children }) => (
-  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3, mb: 3 }}>
-    {React.Children.map(children, (child) => (
-      <Box sx={{ flex: 1, minWidth: "250px" }}>{child}</Box>
-    ))}
-  </Box>
-);
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import BusinessIcon from "@mui/icons-material/Business";
+import PersonIcon from "@mui/icons-material/Person";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import WorkIcon from "@mui/icons-material/Work";
+import EditIcon from "@mui/icons-material/Edit";
 
 export default function Profile() {
-  // --- DATE CALCULATIONS ---
-  // 1. Get Today's Date in YYYY-MM-DD format
-  const today = new Date().toISOString().split("T")[0];
+  const [profileData, setProfileData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // 2. Get Date 2 Years Ago from Today
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - 2);
-  const twoYearsAgo = d.toISOString().split("T")[0];
-  // -------------------------
-
-  const initialAddress = {
-    fullAddress: "",
-    country: "",
-    state: "",
-    district: "",
-    city: "",
-    area: "",
-    pinCode: "",
-  };
-
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    linkedin: "",
-    website: "",
-    dateOfBirth: "",
-    gender: "",
-    designation: "",
-    startupName: "",
-    legalStatus: "",
-    dateOfEstablishment: "",
-    startupStage: "",
-    primarySector: "",
-    companyPAN: "",
-    currentTeamSize: "",
-    maleCount: "",
-    femaleCount: "",
-    gstin: "",
-    companyWebsite: "",
-    numberOfBranches: "1",
-    branchAddresses: [{ ...initialAddress }],
-    founderName: "",
-    founderEmail: "",
-    founderPhone: "",
-    founderDOB: "", // Added
-    founderGender: "", // Added
-    founderLinkedIn: "",
-    founderFacebook: "",
-    fundingNeeded: "",
-    mentorshipNeeded: "",
-    technologySupport: "",
-    incubationSpace: "",
-    supportInterest: "",
-    governmentSchemes: "",
-  });
-
-  const [errors, setErrors] = useState({});
-  const [countryList, setCountryList] = useState([]);
-
-  const [addressArrays, setAddressArrays] = useState({
-    0: { states: [], districts: [], cities: [] },
-  });
-
-  const [isLoading, setIsLoading] = useState({
-    countries: false,
-    states: false,
-    districts: false,
-    cities: false,
-  });
-
-  // --- API: Fetch Countries on Load ---
+  // Fetch profile data from backend
   useEffect(() => {
-    const fetchCountries = async () => {
-      setIsLoading((prev) => ({ ...prev, countries: true }));
+    const fetchProfile = async () => {
       try {
-        const response = await fetch(
-          "https://countriesnow.space/api/v0.1/countries/iso"
-        );
+        // Replace with your actual API endpoint
+        const response = await fetch("http://localhost:8000/startup/profile");
         const data = await response.json();
-        if (data.data) {
-          setCountryList(data.data.map((c) => c.name).sort());
+        
+        if (response.ok) {
+          setProfileData(data);
         }
       } catch (error) {
-        console.error(error);
+        console.error("Error fetching profile:", error);
+      } finally {
+        setLoading(false);
       }
-      setIsLoading((prev) => ({ ...prev, countries: false }));
     };
-    fetchCountries();
+
+    fetchProfile();
   }, []);
 
-  // --- Handle Number of Branches ---
-  const handleBranchCountChange = (e) => {
-    const count = parseInt(e.target.value) || 0;
-    const updatedFormData = { ...formData, numberOfBranches: e.target.value };
-    const validCount = count > 0 ? count : 1;
-    const currentAddresses = [...formData.branchAddresses];
-    if (validCount > currentAddresses.length) {
-      for (let i = currentAddresses.length; i < validCount; i++) {
-        currentAddresses.push({ ...initialAddress });
-      }
-    } else if (validCount < currentAddresses.length) {
-      currentAddresses.length = validCount;
-    }
-    updatedFormData.branchAddresses = currentAddresses;
-    setFormData(updatedFormData);
-  };
-
-  // --- Generic Handler for Address Fields ---
-  const handleAddressFieldChange = (index, field, value) => {
-    const updatedAddresses = [...formData.branchAddresses];
-    updatedAddresses[index] = { ...updatedAddresses[index], [field]: value };
-    setFormData({ ...formData, branchAddresses: updatedAddresses });
-    if (errors[`address_${index}_${field}`]) {
-      setErrors({ ...errors, [`address_${index}_${field}`]: "" });
-    }
-  };
-
-  // --- API Handlers for Dynamic Addresses ---
-  const handleCountryChange = async (index, event) => {
-    const selectedCountry = event.target.value;
-    const updatedAddresses = [...formData.branchAddresses];
-    updatedAddresses[index] = {
-      ...updatedAddresses[index],
-      country: selectedCountry,
-      state: "",
-      district: "",
-      city: "",
-      pinCode: "",
-    };
-    setFormData({ ...formData, branchAddresses: updatedAddresses });
-    setAddressArrays((prev) => ({
-      ...prev,
-      [index]: { states: [], districts: [], cities: [] },
-    }));
-
-    if (selectedCountry) {
-      setIsLoading((prev) => ({ ...prev, states: true }));
-      try {
-        const response = await fetch(
-          "https://countriesnow.space/api/v0.1/countries/states",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ country: selectedCountry }),
-          }
-        );
-        const result = await response.json();
-        if (result.data?.states) {
-          setAddressArrays((prev) => ({
-            ...prev,
-            [index]: {
-              ...prev[index],
-              states: result.data.states.map((s) => s.name),
-            },
-          }));
+  // For now, using sample data (you can remove this when API is ready)
+  useEffect(() => {
+    // Sample data matching your registration form
+    const sampleData = {
+      // Personal Information
+      firstName: "Rajesh",
+      lastName: "Kumar",
+      email: "rajesh@startup.com",
+      phone: "+91 9876543210",
+      phoneCountry: "India",
+      phoneCode: "+91",
+      dateOfBirth: "1995-05-15",
+      gender: "Male",
+      designation: "CEO & Founder",
+      linkedin: "linkedin.com/in/rajeshkumar",
+      
+      // Company Details
+      startupName: "TechVenture Innovations",
+      legalStatus: "Private Limited",
+      dateOfEstablishment: "2024-06-15",
+      primarySector: "AI / ML",
+      secondarySector: "SaaS",
+      companyPAN: "ABCDE1234F",
+      gstin: "29ABCDE1234F1Z5",
+      currentTeamSize: 12,
+      maleCount: 8,
+      femaleCount: 4,
+      companyWebsite: "https://www.techventure.com",
+      numberOfBranches: 2,
+      
+      // Branch Addresses
+      branchAddresses: [
+        {
+          fullAddress: "Building No. 5, Tech Park",
+          country: "India",
+          state: "Karnataka",
+          district: "Bangalore Urban",
+          city: "Bangalore",
+          area: "Whitefield",
+          pinCode: "560066"
+        },
+        {
+          fullAddress: "Plot 23, IT Hub",
+          country: "India",
+          state: "Tamil Nadu",
+          district: "Chennai",
+          city: "Chennai",
+          area: "OMR",
+          pinCode: "600096"
         }
-      } catch (error) {
-        console.error(error);
-      }
-      setIsLoading((prev) => ({ ...prev, states: false }));
-    }
-  };
-
-  const handleStateChange = async (index, event) => {
-    const selectedState = event.target.value;
-    const currentCountry = formData.branchAddresses[index].country;
-    const updatedAddresses = [...formData.branchAddresses];
-    updatedAddresses[index] = {
-      ...updatedAddresses[index],
-      state: selectedState,
-      district: "",
-      city: "",
-      pinCode: "",
+      ],
+      
+      // Founder Details
+      founderFirstName: "Rajesh",
+      founderLastName: "Kumar",
+      founderEmail: "rajesh@techventure.com",
+      founderPhone: "9876543210",
+      founderPhoneCountry: "India",
+      founderPhoneCode: "+91",
+      founderDOB: "1995-05-15",
+      founderGender: "Male",
+      founderLinkedIn: "linkedin.com/in/rajeshkumar",
+      founderFacebook: "facebook.com/rajeshkumar",
+      
+      // Opportunities for Students
+      placementOffered: "Yes",
+      placementType: "Both",
+      internshipOffered: "Yes",
+      internshipType: "Paid",
+      trainingOffered: "Yes",
+      trainingType: ["Industrial Training", "Skill Development"],
+      fypOffered: "Yes",
+      
+      // Startup Requirements
+      fundingNeeded: "Yes",
+      mentorshipNeeded: "Yes",
+      technologySupport: "Yes",
+      incubationSpace: "Yes",
+      registrationNeeded: "No",
+      supportInterest: "Looking for internship coordination support and industry connections",
+      governmentSchemes: "Interested in Startup India Seed Fund and state-level grants"
     };
-    setFormData({ ...formData, branchAddresses: updatedAddresses });
-    setAddressArrays((prev) => ({
-      ...prev,
-      [index]: { ...prev[index], districts: [], cities: [] },
-    }));
+    
+    setProfileData(sampleData);
+    setLoading(false);
+  }, []);
 
-    if (selectedState && currentCountry) {
-      setIsLoading((prev) => ({ ...prev, districts: true }));
-      try {
-        const response = await fetch(
-          "https://countriesnow.space/api/v0.1/countries/state/cities",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ country: currentCountry, state: selectedState }),
-          }
-        );
-        const result = await response.json();
-        if (result.data) {
-          setAddressArrays((prev) => ({
-            ...prev,
-            [index]: { ...prev[index], districts: result.data },
-          }));
-        }
-      } catch (error) {
-        console.error(error);
-      }
-      setIsLoading((prev) => ({ ...prev, districts: false }));
-    }
-  };
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <Typography>Loading profile...</Typography>
+      </Box>
+    );
+  }
 
-  const handleDistrictChange = async (index, event) => {
-    const selectedDistrict = event.target.value;
-    const currentCountry = formData.branchAddresses[index].country;
-    const updatedAddresses = [...formData.branchAddresses];
-    updatedAddresses[index] = {
-      ...updatedAddresses[index],
-      district: selectedDistrict,
-      city: "",
-      pinCode: "",
-    };
-    setFormData({ ...formData, branchAddresses: updatedAddresses });
-    setAddressArrays((prev) => ({
-      ...prev,
-      [index]: { ...prev[index], cities: [] },
-    }));
-
-    if (selectedDistrict && currentCountry === "India") {
-      setIsLoading((prev) => ({ ...prev, cities: true }));
-      try {
-        const response = await fetch(
-          `https://api.postalpincode.in/postoffice/${selectedDistrict}`
-        );
-        const result = await response.json();
-        if (result?.[0]?.PostOffice) {
-          const uniqueCities = [
-            ...new Set(
-              result[0].PostOffice.map((po) => ({ name: po.Name, pin: po.Pincode }))
-            ),
-          ];
-          const sortedCities = uniqueCities.sort((a, b) =>
-            a.name.localeCompare(b.name)
-          );
-          setAddressArrays((prev) => ({
-            ...prev,
-            [index]: { ...prev[index], cities: sortedCities },
-          }));
-        }
-      } catch (error) {
-        console.error(error);
-      }
-      setIsLoading((prev) => ({ ...prev, cities: false }));
-    }
-  };
-
-  const handleCityChange = (index, event) => {
-    handleAddressFieldChange(index, "city", event.target.value);
-  };
-
-  // --- General Input Handler ---
-  const handleInputChange = (field) => (event) => {
-    setFormData({ ...formData, [field]: event.target.value });
-    if (errors[field]) {
-      setErrors({ ...errors, [field]: "" });
-    }
-  };
-
-  // --- Validation ---
-  const validateForm = () => {
-    let tempErrors = {};
-    let isValid = true;
-
-    const checkRequired = (field, label) => {
-      if (!formData[field]) {
-        tempErrors[field] = `${label} is required`;
-        isValid = false;
-      }
-    };
-
-    // Personal Info
-    checkRequired("firstName", "First Name");
-    checkRequired("lastName", "Last Name");
-    checkRequired("email", "Email");
-    checkRequired("phone", "Phone");
-    checkRequired("dateOfBirth", "DOB");
-    checkRequired("gender", "Gender");
-    checkRequired("designation", "Designation");
-
-    // Company
-    checkRequired("startupName", "Startup Name");
-    checkRequired("legalStatus", "Legal Status");
-    checkRequired("dateOfEstablishment", "Date of Est.");
-    checkRequired("primarySector", "Sector");
-    checkRequired("companyPAN", "PAN");
-    checkRequired("currentTeamSize", "Team Size");
-    checkRequired("maleCount", "Male Count");
-    checkRequired("femaleCount", "Female Count");
-    checkRequired("numberOfBranches", "Branches");
-
-    // Founder
-    checkRequired("founderName", "Founder Name");
-    checkRequired("founderEmail", "Founder Email");
-    checkRequired("founderPhone", "Founder Phone");
-    checkRequired("founderDOB", "Founder DOB");
-    checkRequired("founderGender", "Founder Gender");
-
-    // ** Custom Date Validation **
-    if (formData.dateOfEstablishment) {
-      if (formData.dateOfEstablishment < twoYearsAgo) {
-        tempErrors.dateOfEstablishment = "Startup must be less than 2 years old.";
-        isValid = false;
-      } else if (formData.dateOfEstablishment > today) {
-        tempErrors.dateOfEstablishment = "Date cannot be in the future.";
-        isValid = false;
-      }
-    }
-
-    // Address Validation
-    formData.branchAddresses.forEach((addr, index) => {
-      if (!addr.country) {
-        tempErrors[`address_${index}_country`] = "Required";
-        isValid = false;
-      }
-      if (!addr.state) {
-        tempErrors[`address_${index}_state`] = "Required";
-        isValid = false;
-      }
-      if (!addr.district) {
-        tempErrors[`address_${index}_district`] = "Required";
-        isValid = false;
-      }
-      if (!addr.city) {
-        tempErrors[`address_${index}_city`] = "Required";
-        isValid = false;
-      }
-      if (!addr.pinCode) {
-        tempErrors[`address_${index}_pinCode`] = "Required";
-        isValid = false;
-      }
-    });
-
-    setErrors(tempErrors);
-    return isValid;
-  };
-
-  const handleSubmit = () => {
-    if (validateForm()) {
-      console.log("Form Data Submitted:", formData);
-      alert("Application Submitted Successfully!");
-    } else {
-      alert("Please correct errors before submitting.");
-      console.log(errors);
-    }
-  };
-
-  const handleReset = () => {
-    setFormData({
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      linkedin: "",
-      website: "",
-      dateOfBirth: "",
-      gender: "",
-      designation: "",
-      startupName: "",
-      legalStatus: "",
-      dateOfEstablishment: "",
-      startupStage: "",
-      primarySector: "",
-      companyPAN: "",
-      currentTeamSize: "",
-      maleCount: "",
-      femaleCount: "",
-      gstin: "",
-      companyWebsite: "",
-      numberOfBranches: "1",
-      branchAddresses: [{ ...initialAddress }],
-      founderName: "",
-      founderEmail: "",
-      founderPhone: "",
-      founderDOB: "",
-      founderGender: "",
-      founderLinkedIn: "",
-      founderFacebook: "",
-      fundingNeeded: "",
-      mentorshipNeeded: "",
-      technologySupport: "",
-      incubationSpace: "",
-      supportInterest: "",
-      governmentSchemes: "",
-    });
-    setErrors({});
-    setAddressArrays({ 0: { states: [], districts: [], cities: [] } });
-  };
+  if (!profileData) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <Typography>No profile data found</Typography>
+      </Box>
+    );
+  }
 
   return (
-    <MainLayout>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-          <Typography
-            variant="h3"
-            component="h1"
-            align="center"
-            sx={{
-              mb: 4,
-              color: "#1B5E20",
-              fontWeight: "bold",
-              fontSize: "34px",
-            }}
-          >
-            Startup Details Form (Under 2 Years)
+    <Box>
+      {/* HEADER */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h5" fontWeight="bold" display="flex" alignItems="center" gap={1}>
+          <AccountCircleIcon sx={{ color: "#1f4d3a", fontSize: 32 }} />
+          My Profile
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<EditIcon />}
+          sx={{ bgcolor: "#1f4d3a" }}
+        >
+          Edit Profile
+        </Button>
+      </Box>
+
+      {/* PROFILE HEADER CARD */}
+      <Card sx={{ mb: 3, bgcolor: "#1f4d3a", color: "white", borderRadius: 3 }}>
+        <CardContent>
+          <Box display="flex" alignItems="center" gap={3}>
+            <Avatar
+              sx={{
+                width: 100,
+                height: 100,
+                bgcolor: "#fff",
+                color: "#1f4d3a",
+                fontSize: 40,
+                fontWeight: "bold"
+              }}
+            >
+              {profileData.firstName?.charAt(0)}{profileData.lastName?.charAt(0)}
+            </Avatar>
+            <Box flex={1}>
+              <Typography variant="h4" fontWeight="bold">
+                {profileData.firstName} {profileData.lastName}
+              </Typography>
+              <Typography variant="h6" sx={{ opacity: 0.9, mt: 1 }}>
+                {profileData.designation}
+              </Typography>
+              <Typography variant="body1" sx={{ opacity: 0.8, mt: 0.5 }}>
+                {profileData.startupName}
+              </Typography>
+              <Box display="flex" gap={1} mt={2}>
+                <Chip
+                  label={profileData.legalStatus}
+                  size="small"
+                  sx={{ bgcolor: "rgba(255,255,255,0.2)", color: "white" }}
+                />
+                <Chip
+                  label={profileData.primarySector}
+                  size="small"
+                  sx={{ bgcolor: "rgba(255,255,255,0.2)", color: "white" }}
+                />
+                {profileData.secondarySector && (
+                  <Chip
+                    label={profileData.secondarySector}
+                    size="small"
+                    sx={{ bgcolor: "rgba(255,255,255,0.2)", color: "white" }}
+                  />
+                )}
+              </Box>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* QUICK STATS */}
+      <Grid container spacing={3} mb={3}>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Card sx={{ borderRadius: 3 }}>
+            <CardContent>
+              <Typography variant="body2" color="text.secondary">Team Size</Typography>
+              <Typography variant="h4" fontWeight="bold" sx={{ color: "#1f4d3a", my: 1 }}>
+                {profileData.currentTeamSize}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {profileData.maleCount} Male, {profileData.femaleCount} Female
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Card sx={{ borderRadius: 3 }}>
+            <CardContent>
+              <Typography variant="body2" color="text.secondary">Branches</Typography>
+              <Typography variant="h4" fontWeight="bold" sx={{ color: "#1f4d3a", my: 1 }}>
+                {profileData.numberOfBranches}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Locations
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Card sx={{ borderRadius: 3 }}>
+            <CardContent>
+              <Typography variant="body2" color="text.secondary">Established</Typography>
+              <Typography variant="h6" fontWeight="bold" sx={{ color: "#1f4d3a", my: 1 }}>
+                {new Date(profileData.dateOfEstablishment).toLocaleDateString('en-IN', {
+                  month: 'short',
+                  year: 'numeric'
+                })}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {Math.floor((new Date() - new Date(profileData.dateOfEstablishment)) / (1000 * 60 * 60 * 24 * 30))} months old
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Card sx={{ borderRadius: 3 }}>
+            <CardContent>
+              <Typography variant="body2" color="text.secondary">Industry</Typography>
+              <Typography variant="h6" fontWeight="bold" sx={{ color: "#1f4d3a", my: 1 }}>
+                {profileData.primarySector}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Primary Sector
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* PERSONAL INFORMATION */}
+      <Card sx={{ mb: 3, borderRadius: 3 }}>
+        <Box sx={{ bgcolor: "#1f4d3a", color: "white", p: 2, display: "flex", alignItems: "center", gap: 1 }}>
+          <PersonIcon />
+          <Typography variant="h6" fontWeight="bold">
+            Personal Information
           </Typography>
-
-          {/* Company Details */}
-          <Card sx={{ mb: 3, border: "2px solid #1B5E20" }}>
-            <Box sx={{ backgroundColor: "#1B5E20", color: "white", p: 2 }}>
-              <Typography
-                variant="h5"
-                sx={{ fontWeight: "bold", fontSize: "20px" }}
-              >
-                Company Details
-              </Typography>
-            </Box>
-            <CardContent sx={{ p: 3 }}>
-              <FormRow>
-                <TextField
-                  label="Startup Name *"
-                  value={formData.startupName}
-                  onChange={handleInputChange("startupName")}
-                  error={!!errors.startupName}
-                  helperText={errors.startupName}
-                />
-                <TextField
-                  select
-                  label="Legal Status *"
-                  value={formData.legalStatus}
-                  onChange={handleInputChange("legalStatus")}
-                  error={!!errors.legalStatus}
-                  helperText={errors.legalStatus}
-                >
-                  <MenuItem value="Private Limited">Private Limited</MenuItem>
-                  <MenuItem value="LLP">LLP</MenuItem>
-                  <MenuItem value="Partnership">Partnership</MenuItem>
-                  <MenuItem value="Sole Proprietorship">
-                    Sole Proprietorship
-                  </MenuItem>
-                </TextField>
-
-                {/* --- DATE OF ESTABLISHMENT --- */}
-                <TextField
-                  label="Date of Establishment *"
-                  type="date"
-                  value={formData.dateOfEstablishment}
-                  onChange={handleInputChange("dateOfEstablishment")}
-                  InputLabelProps={{ shrink: true }}
-                  error={!!errors.dateOfEstablishment}
-                  helperText={
-                    errors.dateOfEstablishment || "Must be within last 2 years"
-                  }
-                  inputProps={{
-                    max: today, // Cannot be future
-                    min: twoYearsAgo, // Cannot be older than 2 years
-                  }}
-                />
-              </FormRow>
-
-              <FormRow>
-                <TextField
-                  select
-                  label="Primary Sector *"
-                  value={formData.primarySector}
-                  onChange={handleInputChange("primarySector")}
-                  error={!!errors.primarySector}
-                  helperText={
-                    errors.primarySector || "Select your startup's main sector"
-                  }
-                >
-                  <MenuItem value="HealthTech">HealthTech</MenuItem>
-                  <MenuItem value="FinTech">FinTech</MenuItem>
-                  <MenuItem value="EdTech">EdTech</MenuItem>
-                  <MenuItem value="AgriTech">AgriTech</MenuItem>
-                  <MenuItem value="E-Commerce">E-Commerce</MenuItem>
-                  <MenuItem value="AI / ML">AI / ML</MenuItem>
-                  <MenuItem value="IoT">IoT</MenuItem>
-                  <MenuItem value="SaaS">SaaS</MenuItem>
-                  <MenuItem value="Blockchain">Blockchain</MenuItem>
-                  <MenuItem value="Other">Other</MenuItem>
-                </TextField>
-
-                <TextField
-                  label="Company PAN *"
-                  value={formData.companyPAN}
-                  onChange={handleInputChange("companyPAN")}
-                  placeholder="ABCDE1234F"
-                  inputProps={{ maxLength: 10 }}
-                  error={!!errors.companyPAN}
-                  helperText={errors.companyPAN}
-                />
-                <TextField
-                  label="GSTIN / CIN"
-                  value={formData.gstin}
-                  onChange={handleInputChange("gstin")}
-                />
-              </FormRow>
-
-              <FormRow>
-                <TextField
-                  label="Current Team Size *"
-                  value={formData.currentTeamSize}
-                  onChange={handleInputChange("currentTeamSize")}
-                  placeholder="Excluding Founders"
-                  error={!!errors.currentTeamSize}
-                  helperText={errors.currentTeamSize}
-                />
-
-                <TextField
-                  label="Male Employees *"
-                  type="number"
-                  value={formData.maleCount}
-                  onChange={handleInputChange("maleCount")}
-                  error={!!errors.maleCount}
-                  helperText={errors.maleCount}
-                  inputProps={{ min: 0 }}
-                />
-
-                <TextField
-                  label="Female Employees *"
-                  type="number"
-                  value={formData.femaleCount}
-                  onChange={handleInputChange("femaleCount")}
-                  error={!!errors.femaleCount}
-                  helperText={errors.femaleCount}
-                  inputProps={{ min: 0 }}
-                />
-              </FormRow>
-
-              <FormRow>
-                <TextField
-                  label="Company Website"
-                  value={formData.companyWebsite}
-                  onChange={handleInputChange("companyWebsite")}
-                  placeholder="https://www.yourstartup.com"
-                />
-                <TextField
-                  label="Number of Branches *"
-                  type="number"
-                  value={formData.numberOfBranches}
-                  onChange={handleBranchCountChange}
-                  error={!!errors.numberOfBranches}
-                  helperText={errors.numberOfBranches}
-                  inputProps={{ min: 1 }}
-                />
-              </FormRow>
-            </CardContent>
-          </Card>
-
-          {/* Dynamic Registered Office Address(es) */}
-          {formData.branchAddresses.map((address, index) => {
-            const currentLists = addressArrays[index] || {
-              states: [],
-              districts: [],
-              cities: [],
-            };
-
-            return (
-              <Card key={index} sx={{ mb: 3, border: "2px solid #1B5E20" }}>
-                <Box
-                  sx={{
-                    backgroundColor: "#1B5E20",
-                    color: "white",
-                    p: 2,
-                    display: "flex",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Typography
-                    variant="h5"
-                    sx={{ fontWeight: "bold", fontSize: "20px" }}
-                  >
-                    {index === 0
-                      ? "Registered Office Address 1 (Main)"
-                      : `Registered Office Address ${index + 1}`}
-                  </Typography>
+        </Box>
+        <CardContent sx={{ p: 3 }}>
+          <Grid container spacing={3}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper sx={{ p: 2, bgcolor: "#f5f5f5" }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Contact Details
+                </Typography>
+                <Box sx={{ "& > div": { py: 1, borderBottom: "1px solid #e0e0e0" } }}>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Full Name:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {profileData.firstName} {profileData.lastName}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Email:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {profileData.email}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Phone:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {profileData.phoneCode} {profileData.phone}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">LinkedIn:</Typography>
+                    <Typography variant="body2" fontWeight="bold" sx={{ color: "#1976d2" }}>
+                      {profileData.linkedin || "Not provided"}
+                    </Typography>
+                  </Box>
                 </Box>
+              </Paper>
+            </Grid>
 
-                <CardContent sx={{ p: 3 }}>
-                  <FormRow>
-                    {/* Country */}
-                    <TextField
-                      select
-                      label="Country *"
-                      value={address.country}
-                      onChange={(e) => handleCountryChange(index, e)}
-                      disabled={isLoading.countries}
-                      error={!!errors[`address_${index}_country`]}
-                      helperText={errors[`address_${index}_country`]}
-                    >
-                      {isLoading.countries ? (
-                        <MenuItem disabled>
-                          <CircularProgress size={20} /> Loading...
-                        </MenuItem>
-                      ) : (
-                        countryList.map((c) => (
-                          <MenuItem key={c} value={c}>
-                            {c}
-                          </MenuItem>
-                        ))
-                      )}
-                    </TextField>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper sx={{ p: 2, bgcolor: "#f5f5f5" }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Personal Details
+                </Typography>
+                <Box sx={{ "& > div": { py: 1, borderBottom: "1px solid #e0e0e0" } }}>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Date of Birth:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {new Date(profileData.dateOfBirth).toLocaleDateString('en-IN')}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Gender:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {profileData.gender}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Designation:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {profileData.designation}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
-                    {/* State */}
-                    <TextField
-                      select
-                      label="State *"
-                      value={address.state}
-                      onChange={(e) => handleStateChange(index, e)}
-                      disabled={!address.country || isLoading.states}
-                      error={!!errors[`address_${index}_state`]}
-                      helperText={errors[`address_${index}_state`]}
-                    >
-                      {currentLists.states.length === 0 && address.country ? (
-                        <MenuItem disabled>Loading/No Data</MenuItem>
-                      ) : (
-                        currentLists.states.map((s) => (
-                          <MenuItem key={s} value={s}>
-                            {s}
-                          </MenuItem>
-                        ))
-                      )}
-                    </TextField>
+      {/* COMPANY INFORMATION */}
+      <Card sx={{ mb: 3, borderRadius: 3 }}>
+        <Box sx={{ bgcolor: "#1f4d3a", color: "white", p: 2, display: "flex", alignItems: "center", gap: 1 }}>
+          <BusinessIcon />
+          <Typography variant="h6" fontWeight="bold">
+            Company Information
+          </Typography>
+        </Box>
+        <CardContent sx={{ p: 3 }}>
+          <Grid container spacing={3}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper sx={{ p: 2, bgcolor: "#f5f5f5" }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Company Details
+                </Typography>
+                <Box sx={{ "& > div": { py: 1, borderBottom: "1px solid #e0e0e0" } }}>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Startup Name:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {profileData.startupName}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Legal Status:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {profileData.legalStatus}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Established:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {new Date(profileData.dateOfEstablishment).toLocaleDateString('en-IN')}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Website:</Typography>
+                    <Typography variant="body2" fontWeight="bold" sx={{ color: "#1976d2" }}>
+                      {profileData.companyWebsite || "Not provided"}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            </Grid>
 
-                    {/* District */}
-                    <TextField
-                      select
-                      label="District *"
-                      value={address.district}
-                      onChange={(e) => handleDistrictChange(index, e)}
-                      disabled={!address.state || isLoading.districts}
-                      error={!!errors[`address_${index}_district`]}
-                      helperText={errors[`address_${index}_district`]}
-                    >
-                      {currentLists.districts.map((d) => (
-                        <MenuItem key={d} value={d}>
-                          {d}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper sx={{ p: 2, bgcolor: "#f5f5f5" }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Registration Details
+                </Typography>
+                <Box sx={{ "& > div": { py: 1, borderBottom: "1px solid #e0e0e0" } }}>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Company PAN:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {profileData.companyPAN}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">GSTIN:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {profileData.gstin || "Not provided"}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Primary Sector:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {profileData.primarySector}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Secondary Sector:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {profileData.secondarySector || "None"}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+      {/* REGISTERED ADDRESSES */}
+      <Card sx={{ mb: 3, borderRadius: 3 }}>
+        <Box sx={{ bgcolor: "#1f4d3a", color: "white", p: 2, display: "flex", alignItems: "center", gap: 1 }}>
+          <LocationOnIcon />
+          <Typography variant="h6" fontWeight="bold">
+            Registered Office Addresses
+          </Typography>
+        </Box>
+        <CardContent sx={{ p: 3 }}>
+          <Grid container spacing={3}>
+            {profileData.branchAddresses?.map((address, index) => (
+              <Grid size={{ xs: 12, md: 6 }} key={index}>
+                <Paper sx={{ p: 2, bgcolor: "#f5f5f5", height: "100%" }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    {index === 0 ? "Main Office" : `Branch ${index}`}
+                  </Typography>
+                  <Divider sx={{ my: 1 }} />
+                  <Typography variant="body2" paragraph>
+                    <b>Address:</b> {address.fullAddress}
+                  </Typography>
+                  <Typography variant="body2">
+                    <b>City:</b> {address.city}, {address.area}
+                  </Typography>
+                  <Typography variant="body2">
+                    <b>District:</b> {address.district}
+                  </Typography>
+                  <Typography variant="body2">
+                    <b>State:</b> {address.state}
+                  </Typography>
+                  <Typography variant="body2">
+                    <b>Country:</b> {address.country}
+                  </Typography>
+                  <Typography variant="body2">
+                    <b>Pin Code:</b> {address.pinCode}
+                  </Typography>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        </CardContent>
+      </Card>
 
-                    {/* City */}
-                    {address.country === "India" ? (
-                      <TextField
-                        select
-                        label="City *"
-                        value={address.city}
-                        onChange={(e) => handleCityChange(index, e)}
-                        disabled={!address.district || isLoading.cities}
-                        error={!!errors[`address_${index}_city`]}
-                        helperText={errors[`address_${index}_city`]}
-                      >
-                        {currentLists.cities.map((c, i) => (
-                          <MenuItem key={`${c.name}-${i}`} value={c.name}>
-                            {c.name}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    ) : (
-                      <TextField
-                        label="City *"
-                        value={address.city}
-                        onChange={(e) =>
-                          handleAddressFieldChange(index, "city", e.target.value)
-                        }
-                        placeholder="Enter City"
-                        error={!!errors[`address_${index}_city`]}
-                        helperText={errors[`address_${index}_city`]}
-                      />
-                    )}
-                  </FormRow>
+      {/* FOUNDER INFORMATION */}
+      <Card sx={{ mb: 3, borderRadius: 3 }}>
+        <Box sx={{ bgcolor: "#1f4d3a", color: "white", p: 2, display: "flex", alignItems: "center", gap: 1 }}>
+          <WorkIcon />
+          <Typography variant="h6" fontWeight="bold">
+            Founder Information
+          </Typography>
+        </Box>
+        <CardContent sx={{ p: 3 }}>
+          <Grid container spacing={3}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper sx={{ p: 2, bgcolor: "#f5f5f5" }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Founder Contact
+                </Typography>
+                <Box sx={{ "& > div": { py: 1, borderBottom: "1px solid #e0e0e0" } }}>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Name:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {profileData.founderFirstName} {profileData.founderLastName}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Email:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {profileData.founderEmail}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Phone:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {profileData.founderPhoneCode} {profileData.founderPhone}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">LinkedIn:</Typography>
+                    <Typography variant="body2" fontWeight="bold" sx={{ color: "#1976d2" }}>
+                      {profileData.founderLinkedIn || "Not provided"}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            </Grid>
 
-                  <FormRow>
-                    <TextField
-                      label="Area / Locality"
-                      value={address.area}
-                      onChange={(e) =>
-                        handleAddressFieldChange(index, "area", e.target.value)
-                      }
-                    />
-                    <TextField
-                      label="Pin Code *"
-                      value={address.pinCode}
-                      onChange={(e) =>
-                        handleAddressFieldChange(index, "pinCode", e.target.value)
-                      }
-                      error={!!errors[`address_${index}_pinCode`]}
-                      helperText={errors[`address_${index}_pinCode`]}
-                    />
-                  </FormRow>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper sx={{ p: 2, bgcolor: "#f5f5f5" }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Founder Details
+                </Typography>
+                <Box sx={{ "& > div": { py: 1, borderBottom: "1px solid #e0e0e0" } }}>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Date of Birth:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {new Date(profileData.founderDOB).toLocaleDateString('en-IN')}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Gender:</Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {profileData.founderGender}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body2">Facebook:</Typography>
+                    <Typography variant="body2" fontWeight="bold" sx={{ color: "#1976d2" }}>
+                      {profileData.founderFacebook || "Not provided"}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
-                  <FormRow>
-                    <TextField
-                      label="Full Address (Street / Building / Door No)"
-                      multiline
-                      rows={2}
-                      value={address.fullAddress}
-                      onChange={(e) =>
-                        handleAddressFieldChange(
-                          index,
-                          "fullAddress",
-                          e.target.value
-                        )
-                      }
-                      placeholder="Enter detailed address here"
-                    />
-                  </FormRow>
-                </CardContent>
-              </Card>
-            );
-          })}
-
-          {/* Personal Information */}
-          <Card sx={{ mb: 3, border: "2px solid #1B5E20" }}>
-            <Box sx={{ backgroundColor: "#1B5E20", color: "white", p: 2 }}>
-              <Typography
-                variant="h5"
-                sx={{ fontWeight: "bold", fontSize: "20px" }}
-              >
-                Personal Information
-              </Typography>
-            </Box>
-            <CardContent sx={{ p: 3 }}>
-              <FormRow>
-                <TextField
-                  label="First Name *"
-                  value={formData.firstName}
-                  onChange={handleInputChange("firstName")}
-                  error={!!errors.firstName}
-                  helperText={errors.firstName}
-                />
-                <TextField
-                  label="Last Name *"
-                  value={formData.lastName}
-                  onChange={handleInputChange("lastName")}
-                  error={!!errors.lastName}
-                  helperText={errors.lastName}
-                />
-                <TextField
-                  label="Email Address *"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange("email")}
-                  error={!!errors.email}
-                  helperText={errors.email}
-                />
-              </FormRow>
-
-              <FormRow>
-                <TextField
-                  label="Phone Number *"
-                  value={formData.phone}
-                  onChange={handleInputChange("phone")}
-                  error={!!errors.phone}
-                  helperText={errors.phone}
-                />
-                <TextField
-                  label="LinkedIn Profile URL"
-                  value={formData.linkedin}
-                  onChange={handleInputChange("linkedin")}
-                />
-                <TextField
-                  label="Date of Birth *"
-                  type="date"
-                  value={formData.dateOfBirth}
-                  onChange={handleInputChange("dateOfBirth")}
-                  InputLabelProps={{ shrink: true }}
-                  error={!!errors.dateOfBirth}
-                  helperText={errors.dateOfBirth}
-                  inputProps={{ max: today }}
-                />
-              </FormRow>
-
-              <FormRow>
-                <TextField
-                  label="Designation *"
-                  value={formData.designation}
-                  onChange={handleInputChange("designation")}
-                  error={!!errors.designation}
-                  helperText={errors.designation}
-                  sx={{ flex: 1 }}
-                />
-                <FormControl component="fieldset" error={!!errors.gender}>
-                  <FormLabel component="legend" sx={{ fontSize: "14px" }}>
-                    Gender *
-                  </FormLabel>
-                  <RadioGroup
-                    row
-                    value={formData.gender}
-                    onChange={handleInputChange("gender")}
-                  >
-                    <FormControlLabel
-                      value="Male"
-                      control={<Radio />}
-                      label="Male"
-                    />
-                    <FormControlLabel
-                      value="Female"
-                      control={<Radio />}
-                      label="Female"
-                    />
-                    <FormControlLabel
-                      value="Others"
-                      control={<Radio />}
-                      label="Others"
-                    />
-                  </RadioGroup>
-                  {errors.gender && <FormHelperText>{errors.gender}</FormHelperText>}
-                </FormControl>
-              </FormRow>
-            </CardContent>
-          </Card>
-
-          {/* Founder Details */}
-          <Card sx={{ mb: 3, border: "2px solid #1B5E20" }}>
-            <Box sx={{ backgroundColor: "#1B5E20", color: "white", p: 2 }}>
-              <Typography
-                variant="h5"
-                sx={{ fontWeight: "bold", fontSize: "20px" }}
-              >
-                Founder Details
-              </Typography>
-            </Box>
-            <CardContent sx={{ p: 3 }}>
-              <FormRow>
-                <TextField
-                  label="Founder Name *"
-                  value={formData.founderName}
-                  onChange={handleInputChange("founderName")}
-                  error={!!errors.founderName}
-                  helperText={errors.founderName}
-                />
-
-                <TextField
-                  label="Founder Email *"
-                  type="email"
-                  value={formData.founderEmail}
-                  onChange={handleInputChange("founderEmail")}
-                  error={!!errors.founderEmail}
-                  helperText={errors.founderEmail}
-                />
-
-                <TextField
-                  label="Founder Phone *"
-                  value={formData.founderPhone}
-                  onChange={handleInputChange("founderPhone")}
-                  error={!!errors.founderPhone}
-                  helperText={errors.founderPhone}
-                />
-              </FormRow>
-
-              <FormRow>
-                <TextField
-                  label="Founder Date of Birth *"
-                  type="date"
-                  value={formData.founderDOB}
-                  onChange={handleInputChange("founderDOB")}
-                  InputLabelProps={{ shrink: true }}
-                  error={!!errors.founderDOB}
-                  helperText={errors.founderDOB}
-                  inputProps={{ max: today }}
-                />
-
-                <FormControl
-                  component="fieldset"
-                  error={!!errors.founderGender}
-                  sx={{ minWidth: 250 }}
-                >
-                  <FormLabel component="legend" sx={{ fontSize: "14px" }}>
-                    Founder Gender *
-                  </FormLabel>
-                  <RadioGroup
-                    row
-                    value={formData.founderGender}
-                    onChange={handleInputChange("founderGender")}
-                  >
-                    <FormControlLabel
-                      value="Male"
-                      control={<Radio />}
-                      label="Male"
-                    />
-                    <FormControlLabel
-                      value="Female"
-                      control={<Radio />}
-                      label="Female"
-                    />
-                    <FormControlLabel
-                      value="Others"
-                      control={<Radio />}
-                      label="Others"
-                    />
-                  </RadioGroup>
-                  {errors.founderGender && (
-                    <FormHelperText>{errors.founderGender}</FormHelperText>
-                  )}
-                </FormControl>
-              </FormRow>
-
-              <FormRow>
-                <TextField
-                  label="Founder LinkedIn Profile"
-                  value={formData.founderLinkedIn}
-                  onChange={handleInputChange("founderLinkedIn")}
-                  placeholder="https://linkedin.com/in/username"
-                />
-
-                <TextField
-                  label="Founder Facebook Profile"
-                  value={formData.founderFacebook}
-                  onChange={handleInputChange("founderFacebook")}
-                  placeholder="https://facebook.com/username"
-                />
-              </FormRow>
-            </CardContent>
-          </Card>
-
-          {/* Startup Requirements */}
-          <Card sx={{ mb: 3, border: "2px solid #1B5E20" }}>
-            <Box sx={{ backgroundColor: "#1B5E20", color: "white", p: 2 }}>
-              <Typography
-                variant="h5"
-                sx={{ fontWeight: "bold", fontSize: "20px" }}
-              >
-                Startup Requirements
-              </Typography>
-            </Box>
-
-            <CardContent sx={{ px: 4, py: 3 }}>
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                  columnGap: 6,
-                  rowGap: 4,
-                }}
-              >
-                <FormControl>
-                  <FormLabel sx={{ mb: 1, fontSize: "14px", textAlign: "left" }}>
-                    Funding Needed ?
-                  </FormLabel>
-                  <RadioGroup
-                    row
-                    value={formData.fundingNeeded}
-                    onChange={handleInputChange("fundingNeeded")}
-                  >
-                    <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
-                    <FormControlLabel value="No" control={<Radio />} label="No" />
-                  </RadioGroup>
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel sx={{ mb: 1, textAlign: "left" }}>
-                    Mentorship Needed ?
-                  </FormLabel>
-                  <RadioGroup
-                    row
-                    value={formData.mentorshipNeeded}
-                    onChange={handleInputChange("mentorshipNeeded")}
-                  >
-                    <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
-                    <FormControlLabel value="No" control={<Radio />} label="No" />
-                  </RadioGroup>
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel sx={{ mb: 1, textAlign: "left" }}>
-                    Technology Support Needed ?
-                  </FormLabel>
-                  <RadioGroup
-                    row
-                    value={formData.technologySupport}
-                    onChange={handleInputChange("technologySupport")}
-                  >
-                    <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
-                    <FormControlLabel value="No" control={<Radio />} label="No" />
-                  </RadioGroup>
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel sx={{ mb: 1, textAlign: "left" }}>
-                    Do you require Incubation / Co-working Space ?
-                  </FormLabel>
-                  <RadioGroup
-                    row
-                    value={formData.incubationSpace}
-                    onChange={handleInputChange("incubationSpace")}
-                  >
-                    <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
-                    <FormControlLabel value="No" control={<Radio />} label="No" />
-                  </RadioGroup>
-                </FormControl>
-
-                <TextField
-                  multiline
-                  rows={3}
-                  label="I am interested in receiving support for an internship program"
-                  value={formData.supportInterest || ""}
-                  onChange={handleInputChange("supportInterest")}
-                />
-
-                <TextField
-                  multiline
-                  rows={3}
-                  label="Check my eligibility for relevant Government Startup Schemes."
-                  value={formData.governmentSchemes || ""}
-                  onChange={handleInputChange("governmentSchemes")}
+      {/* OPPORTUNITIES FOR STUDENTS */}
+      <Card sx={{ mb: 3, borderRadius: 3 }}>
+        <Box sx={{ bgcolor: "#1f4d3a", color: "white", p: 2 }}>
+          <Typography variant="h6" fontWeight="bold">
+            Opportunities for Students
+          </Typography>
+        </Box>
+        <CardContent sx={{ p: 3 }}>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box display="flex" justifyContent="space-between" p={2} bgcolor="#f5f5f5" borderRadius={2}>
+                <Typography variant="body2">Placements Offered:</Typography>
+                <Chip
+                  label={profileData.placementOffered}
+                  color={profileData.placementOffered === "Yes" ? "success" : "default"}
+                  size="small"
                 />
               </Box>
-            </CardContent>
-          </Card>
+            </Grid>
+            {profileData.placementOffered === "Yes" && (
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Box display="flex" justifyContent="space-between" p={2} bgcolor="#f5f5f5" borderRadius={2}>
+                  <Typography variant="body2">Placement Type:</Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    {profileData.placementType}
+                  </Typography>
+                </Box>
+              </Grid>
+            )}
 
-          {/* Submit Buttons */}
-          <Box sx={{ display: "flex", gap: 2, justifyContent: "center", mt: 4 }}>
-            <Button
-              variant="contained"
-              size="large"
-              onClick={handleSubmit}
-              sx={{
-                backgroundColor: "#1B5E20",
-                "&:hover": { backgroundColor: "#0f7e16ff" },
-                px: 4,
-                py: 1.5,
-              }}
-            >
-              SUBMIT APPLICATION
-            </Button>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box display="flex" justifyContent="space-between" p={2} bgcolor="#f5f5f5" borderRadius={2}>
+                <Typography variant="body2">Internships Provided:</Typography>
+                <Chip
+                  label={profileData.internshipOffered}
+                  color={profileData.internshipOffered === "Yes" ? "success" : "default"}
+                  size="small"
+                />
+              </Box>
+            </Grid>
+            {profileData.internshipOffered === "Yes" && (
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Box display="flex" justifyContent="space-between" p={2} bgcolor="#f5f5f5" borderRadius={2}>
+                  <Typography variant="body2">Internship Type:</Typography>
+                  <Typography variant="body2" fontWeight="bold">
+                    {profileData.internshipType}
+                  </Typography>
+                </Box>
+              </Grid>
+            )}
 
-            <Button
-              variant="outlined"
-              size="large"
-              onClick={handleReset}
-              sx={{
-                borderColor: "#f44336",
-                color: "#f44336",
-                "&:hover": {
-                  borderColor: "#d32f2f",
-                  backgroundColor: "#ffebee",
-                },
-                px: 4,
-                py: 1.5,
-              }}
-            >
-              RESET FORM
-            </Button>
-          </Box>
-        </Container>
-      </ThemeProvider>
-    </MainLayout>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box display="flex" justifyContent="space-between" p={2} bgcolor="#f5f5f5" borderRadius={2}>
+                <Typography variant="body2">Training/Apprenticeship:</Typography>
+                <Chip
+                  label={profileData.trainingOffered}
+                  color={profileData.trainingOffered === "Yes" ? "success" : "default"}
+                  size="small"
+                />
+              </Box>
+            </Grid>
+            {profileData.trainingOffered === "Yes" && (
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Box display="flex" justifyContent="space-between" p={2} bgcolor="#f5f5f5" borderRadius={2}>
+                  <Typography variant="body2">Program Types:</Typography>
+                  <Box display="flex" gap={0.5}>
+                    {profileData.trainingType?.map((type, idx) => (
+                      <Chip key={idx} label={type} size="small" />
+                    ))}
+                  </Box>
+                </Box>
+              </Grid>
+            )}
+
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box display="flex" justifyContent="space-between" p={2} bgcolor="#f5f5f5" borderRadius={2}>
+                <Typography variant="body2">Final Year Projects:</Typography>
+                <Chip
+                  label={profileData.fypOffered}
+                  color={profileData.fypOffered === "Yes" ? "success" : "default"}
+                  size="small"
+                />
+              </Box>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* STARTUP REQUIREMENTS */}
+      <Card sx={{ mb: 3, borderRadius: 3 }}>
+        <Box sx={{ bgcolor: "#1f4d3a", color: "white", p: 2 }}>
+          <Typography variant="h6" fontWeight="bold">
+            Startup Requirements & Support
+          </Typography>
+        </Box>
+        <CardContent sx={{ p: 3 }}>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, md: 3 }}>
+              <Box textAlign="center" p={2} bgcolor="#f5f5f5" borderRadius={2}>
+                <Typography variant="body2" gutterBottom>Funding Needed</Typography>
+                <Chip
+                  label={profileData.fundingNeeded}
+                  color={profileData.fundingNeeded === "Yes" ? "success" : "default"}
+                />
+              </Box>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 3 }}>
+              <Box textAlign="center" p={2} bgcolor="#f5f5f5" borderRadius={2}>
+                <Typography variant="body2" gutterBottom>Mentorship Needed</Typography>
+                <Chip
+                  label={profileData.mentorshipNeeded}
+                  color={profileData.mentorshipNeeded === "Yes" ? "success" : "default"}
+                />
+              </Box>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 3 }}>
+              <Box textAlign="center" p={2} bgcolor="#f5f5f5" borderRadius={2}>
+                <Typography variant="body2" gutterBottom>Technology Support</Typography>
+                <Chip
+                  label={profileData.technologySupport}
+                  color={profileData.technologySupport === "Yes" ? "success" : "default"}
+                />
+              </Box>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 3 }}>
+              <Box textAlign="center" p={2} bgcolor="#f5f5f5" borderRadius={2}>
+                <Typography variant="body2" gutterBottom>Incubation Space</Typography>
+                <Chip
+                  label={profileData.incubationSpace}
+                  color={profileData.incubationSpace === "Yes" ? "success" : "default"}
+                />
+              </Box>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 3 }}>
+              <Box textAlign="center" p={2} bgcolor="#f5f5f5" borderRadius={2}>
+                <Typography variant="body2" gutterBottom>Registration Needed</Typography>
+                <Chip
+                  label={profileData.registrationNeeded}
+                  color={profileData.registrationNeeded === "Yes" ? "warning" : "success"}
+                />
+              </Box>
+            </Grid>
+
+            {profileData.supportInterest && (
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Paper sx={{ p: 2, bgcolor: "#f5f5f5" }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Internship Support Interest
+                  </Typography>
+                  <Typography variant="body2">{profileData.supportInterest}</Typography>
+                </Paper>
+              </Grid>
+            )}
+
+            {profileData.governmentSchemes && (
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Paper sx={{ p: 2, bgcolor: "#f5f5f5" }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Government Schemes Interest
+                  </Typography>
+                  <Typography variant="body2">{profileData.governmentSchemes}</Typography>
+                </Paper>
+              </Grid>
+            )}
+          </Grid>
+        </CardContent>
+      </Card>
+    </Box>
   );
 }
