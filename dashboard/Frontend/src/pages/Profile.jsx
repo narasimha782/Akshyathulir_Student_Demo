@@ -83,7 +83,7 @@ const initialFormState = {
   gender: "",
   designation: "",
   cin: "",
-  startupName: "",
+  instituteName: "",
   legalStatus: "",
   dateOfEstablishment: "",
   primarySector: "",
@@ -110,7 +110,7 @@ const initialFormState = {
   founderFirstName: "",
   founderLastName: "",
   founderPhoneCountry: "India",
-  founderPhoneCode: "+91",
+  founderPhoneCode: "",
   founderPhone: "",
   founderDOB: "",
   founderGender: "",
@@ -132,8 +132,9 @@ const initialFormState = {
   trainingType: [],
   fypOffered: "",
   phoneCountry: "India",
-  phoneCode: "+91",
+  phoneCode: "",
   phone: "",
+  logo: "",
 };
 const initialAddress = {
   fullAddress: "",
@@ -170,7 +171,7 @@ function App() {
     cin: false,
     email: false,
   });
-
+  //fetching the required lists based on the selected country, state, and district.
   const preloadAddressDropdowns = async (addresses) => {
     const newAddressArrays = {};
 
@@ -219,17 +220,21 @@ function App() {
     setIsEditable(true);
   };
 
-  const handleCancelEdit = () => {
-    if (originalData) {
-      setFormData(originalData);
+  const handleDelete = async () => {
+    try {
+      await Api.delete(`/startup/${encodeURIComponent(formData.email)}/`);
+      alert("Startup deleted successfully.");
+      handleReset();
+    } catch (error) {
+      alert(
+        error.response?.status === 404
+          ? "Record not found."
+          : "Server error. Could not delete.",
+      );
     }
-    setErrors({});
-    setIsEditable(false);
   };
 
-  // --- API: FETCH COUNTRY LIST ON LOAD ---
-
-  // --- API: FETCH COMPANY DETAILS VIA PERSONAL EMAIL ---
+  // ---LOAD EMAIL FROM LOCAL STORAGE ---
   useEffect(() => {
     const storedEmail = localStorage.getItem("userEmail");
 
@@ -240,7 +245,7 @@ function App() {
       }));
     }
   }, []);
-
+  //----FETCH COMPANY BY EMAIL---
   useEffect(() => {
     if (!formData.email) return;
     if (!EMAIL_REGEX.test(formData.email)) return;
@@ -261,13 +266,14 @@ function App() {
           ...prev,
 
           // Personal
+          logo: data.logo || "",
           firstName: data.firstName || "",
           lastName: data.lastName || "",
           email: data.email || prev.email,
           dateOfBirth: data.dateOfBirth || "",
           gender: data.gender || "",
           phoneCountry: data.phoneCountry || "India",
-          phoneCode: data.phoneCode || "+91",
+          phoneCode: data.phoneCode || "",
           phone: data.phone || "",
 
           // Online
@@ -277,7 +283,7 @@ function App() {
           // Company
           designation: data.designation || "",
           cin: data.cin || "",
-          startupName: data.startupName || "",
+          instituteName: data.instituteName || "",
           legalStatus: data.legalStatus || "",
           dateOfEstablishment: data.dateOfEstablishment || "",
           primarySector: data.primarySector || "",
@@ -343,7 +349,7 @@ function App() {
           founderLastName: data.founderLastName || "",
           founderEmail: data.founderEmail || "",
           founderPhoneCountry: data.founderPhoneCountry || "India",
-          founderPhoneCode: data.founderPhoneCode || "+91",
+          founderPhoneCode: data.founderPhoneCode || "",
           founderPhone: data.founderPhone || "",
           founderDOB: data.founderDOB || "",
           founderGender: data.founderGender || "",
@@ -386,6 +392,7 @@ function App() {
 
     fetchCompanyByEmail();
   }, [formData.email]);
+  //---from an API, and stores the country names while showing a loading state.---
   useEffect(() => {
     const fetchCountries = async () => {
       setIsLoading((prev) => ({ ...prev, countries: true }));
@@ -580,7 +587,7 @@ function App() {
     }
   };
 
-  // --- LOGIC: HANDLE CITY CHANGE ---
+  // --- FROM THE branch address automatically fills the pin code based on that city. ---
   const handleCityChange = (index, event) => {
     const selectedCityName = event.target.value;
     const selectedCityObj = addressArrays[index]?.cities.find(
@@ -595,7 +602,7 @@ function App() {
     setFormData({ ...formData, branchAddresses: updatedAddresses });
   };
 
-  // --- LOGIC: INPUT CHANGE HANDLER ---
+  // --- COUNT THE MALE & FEMALE = TOTAL TEAM ---
   const handleInputChange = (field) => (event) => {
     const value = event.target.value;
     if (
@@ -630,7 +637,7 @@ function App() {
     });
     if (errors[field]) setErrors((prevErr) => ({ ...prevErr, [field]: "" }));
   };
-
+  //---choose the country related phone number---
   const handlePhoneCountryChange = (e) => {
     const selected = PHONE_COUNTRIES.find((c) => c.name === e.target.value);
     setFormData((prev) => ({
@@ -640,7 +647,7 @@ function App() {
       phone: "",
     }));
   };
-
+  //---Form Validation---
   const validateForm = () => {
     let tempErrors = {};
     let isValid = true;
@@ -662,7 +669,7 @@ function App() {
       tempErrors.email = "Enter a valid email address";
       isValid = false;
     }
-    checkRequired("startupName", "Startup Name");
+    checkRequired("instituteName", "Institute Name");
     checkRequired("legalStatus", "Legal Status");
     checkRequired("dateOfEstablishment", "Date of Establishment");
     checkRequired("primarySector", "Primary Sector");
@@ -723,51 +730,68 @@ function App() {
     setErrors(tempErrors);
     return isValid;
   };
-const handleSubmit = async () => {
+  const handleSubmit = async () => {
     if (!validateForm()) {
       alert("Please correct errors before submitting.");
       return;
     }
 
     try {
-      // FIX: Send phone and code separately. Do NOT combine them.
       const payload = {
         ...formData,
-        // Ensure numbers are integers for the backend
+
         currentTeamSize: parseInt(formData.currentTeamSize) || 0,
         numberOfBranches: parseInt(formData.numberOfBranches) || 1,
-        maleCount: parseInt(formData.maleCount) || 0,
-        femaleCount: parseInt(formData.femaleCount) || 0,
       };
 
       const response = isEditMode
-        ? await Api.put("/startup", payload)
-        : await Api.post("/startup", payload);
+        ? await Api.put("/startup/", payload)
+        : await Api.post("/startup/", payload);
 
       if (response.status === 200 || response.status === 201) {
         localStorage.setItem("userEmail", formData.email);
 
         alert(isEditMode ? "Updated successfully!" : "Submitted successfully!");
-        
-        // RELOAD THE PAGE to see changes
-        window.location.reload(); 
+        window.location.href = "/allform";
       }
     } catch (error) {
-      console.error(error);
       alert("Server error. Please try again.");
     }
   };
+  const handleLogoUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
+    const email = localStorage.getItem("userEmail");
+
+    const formDataUpload = new FormData();
+    formDataUpload.append("file", file);
+
+    const res = await Api.post(
+      `/startup/upload-logo/${email}`,
+      formDataUpload,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    );
+
+    setFormData((prev) => ({
+      ...prev,
+      logo: res.data.logo,
+    }));
+  };
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Typography
           variant="h3"
-          align="center"
+          
           sx={{ mb: 4, color: "#1f4d3a", fontWeight: "bold", fontSize: "34px" }}
         >
-          Startup Company (less than 2 Years)
+          Training Institute Form
         </Typography>
         <Box
           sx={{
@@ -803,10 +827,55 @@ const handleSubmit = async () => {
               variant="h5"
               sx={{ fontWeight: "bold", fontSize: "20px" }}
             >
-              Company Details
+              Institute Details
             </Typography>
           </Box>
           <CardContent sx={{ p: 3 }}>
+            <Box sx={{  alignItems: "center", gap: 3, mb: 3 }}>
+              {/* Clickable Logo Upload */}
+              <Box
+                component="label"
+                sx={{
+                  width: 100,
+                  height: 100,
+                  cursor: isEditMode && !isEditable ? "default" : "pointer",
+                  display: "flex",
+                }}
+              >
+                <Box
+                  component="img"
+                  src={
+                    formData.logo
+                      ? `http://127.0.0.1:8000/${formData.logo}`
+                      : "/default-logo.png"
+                  }
+                  alt="Institute Logo"
+                  sx={{
+                    width: 90,
+                    height: 90,
+                    borderRadius: 2,
+                    objectFit: "cover",
+                    border: "2px solid #1f4d3a",
+                    transition: "0.2s",
+                    "&:hover": {
+                      opacity: isEditMode && !isEditable ? 1 : 0.8,
+                    },
+                  }}
+                />
+
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  disabled={isEditMode && !isEditable}
+                />
+              </Box>
+
+              <Typography variant="body2" color="text.secondary">
+                Click logo to upload / change
+              </Typography>
+            </Box>
             <FormRow>
               <TextField
                 label="CIN (Corporate Identification Number)"
@@ -829,12 +898,12 @@ const handleSubmit = async () => {
               />
 
               <TextField
-                label="Startup Name *"
-                value={formData.startupName}
+                label="Institute Name *"
+                value={formData.instituteName}
                 disabled={isEditMode && !isEditable}
-                onChange={handleInputChange("startupName")}
-                error={!!errors.startupName}
-                helperText={errors.startupName}
+                onChange={handleInputChange("instituteName")}
+                error={!!errors.instituteName}
+                helperText={errors.instituteName}
                 placeholder="Enter Company Registered Name"
               />
               <TextField
@@ -892,9 +961,6 @@ const handleSubmit = async () => {
                 InputLabelProps={{ shrink: true }}
                 onChange={handleInputChange("dateOfEstablishment")}
                 error={!!errors.dateOfEstablishment}
-                helperText={
-                  errors.dateOfEstablishment || `Established within 2 years`
-                }
                 inputProps={{ min: twoYearsAgo, max: today }}
               />
               <TextField
@@ -1900,15 +1966,20 @@ const handleSubmit = async () => {
 
         {/* --- SECTION: SUBMIT BUTTONS --- */}
         <Box sx={{ display: "flex", gap: 2 }}>
-          {isEditable && (
-            <Button color="warning" onClick={handleCancelEdit}>
-              Cancel Edit
+          {isEditMode && (
+            <Button variant="outlined" color="error" onClick={handleDelete}>
+              Delete
             </Button>
           )}
-
-          {!isEditMode && (
-            <Button variant="outlined" onClick={handleReset}>
-              Reset
+          {isEditMode && isEditable && (
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setFormData(originalData);
+                setIsEditable(false);
+              }}
+            >
+              Cancel
             </Button>
           )}
 

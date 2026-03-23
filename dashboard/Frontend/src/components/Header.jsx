@@ -1,12 +1,7 @@
-import React from "react";
 import { Box, Typography, IconButton } from "@mui/material";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LogoutIcon from "@mui/icons-material/Logout";
-import { useNavigate } from "react-router-dom";
-
 export default function Header() {
-  const navigate = useNavigate();
-
   return (
     <Box
       sx={{
@@ -17,24 +12,13 @@ export default function Header() {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-      }}
-    >
+      }}>
       <Typography variant="h5">Startup Dashboard</Typography>
-
       <Box>
-        {/* My Profile */}
-        <IconButton
-          color="inherit"
-          onClick={() => navigate("/profile")}
-        >
+        <IconButton color="inherit">
           <AccountCircleIcon />
         </IconButton>
-
-        {/* Logout */}
-        <IconButton
-          color="inherit"
-          onClick={() => navigate("/")}
-        >
+        <IconButton color="inherit">
           <LogoutIcon />
         </IconButton>
       </Box>

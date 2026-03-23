@@ -1,193 +1,122 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  Box,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  Chip,
-  Button,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  MenuItem,
+  Box, Typography, Grid, Card, CardContent, Chip, Button,
+  Table, TableHead, TableRow, TableCell, TableBody,
+  IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
+  TextField, MenuItem, CircularProgress,
 } from "@mui/material";
-
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import AddIcon from "@mui/icons-material/Add";
+import EditIcon     from "@mui/icons-material/Edit";
+import DeleteIcon   from "@mui/icons-material/Delete";
+import AddIcon      from "@mui/icons-material/Add";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
-import CloseIcon from "@mui/icons-material/Close";
+import CloseIcon    from "@mui/icons-material/Close";
+import Api from "./api";
+import { useEmail } from "../context/EmailContext";
+import NoEmailGuard from "../components/NoEmailGuard";
 
 export default function MyClients() {
-  /* ================= STATE ================= */
-  const [clients, setClients] = useState([
-    {
-      company: "ABC Technologies",
-      contact: "Ravi Kumar",
-      email: "ravi@abc.com",
-      industry: "IT Services",
-      project: "Web Platform",
-      startDate: "Jan 2026",
-      status: "Active",
-    },
-    {
-      company: "StartupX",
-      contact: "Anjali Sharma",
-      email: "anjali@startupx.com",
-      industry: "FinTech",
-      project: "Mobile App",
-      startDate: "Feb 2026",
-      status: "Active",
-    },
-    {
-      company: "GreenEnergy Ltd",
-      contact: "Suresh Patel",
-      email: "suresh@greenenergy.com",
-      industry: "Energy",
-      project: "Dashboard System",
-      startDate: "Mar 2026",
-      status: "Completed",
-    },
-  ]);
-
-  const [open, setOpen] = useState(false);
-  const [editIndex, setEditIndex] = useState(null);
-  const [deleteIndex, setDeleteIndex] = useState(null);
+  const { activeEmail } = useEmail();
+  const [clients,    setClients]    = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [open,       setOpen]       = useState(false);
+  const [editId,     setEditId]     = useState(null);
+  const [deleteId,   setDeleteId]   = useState(null);
+  const [deleteName, setDeleteName] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const [form, setForm] = useState({
-    company: "",
-    contact: "",
-    email: "",
-    industry: "",
-    project: "",
-    startDate: "",
-    status: "Active",
-  });
+  const emptyForm = { company:"", contact:"", email:"", industry:"", project:"", startDate:"", status:"Active" };
+  const [form, setForm] = useState(emptyForm);
 
-  /* ================= ADD ================= */
-  const openAdd = () => {
-    setEditIndex(null);
-    setForm({
-      company: "",
-      contact: "",
-      email: "",
-      industry: "",
-      project: "",
-      startDate: "",
-      status: "Active",
-    });
-    setOpen(true);
+  useEffect(() => {
+    if (activeEmail) fetchClients();
+    else setLoading(false);
+  }, [activeEmail]);
+
+  const fetchClients = async () => {
+    try {
+      setLoading(true);
+      const { data } = await Api.get(`/clients?email=${encodeURIComponent(activeEmail)}`);
+      setClients(data);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   };
 
-  /* ================= EDIT ================= */
-  const openEdit = (index) => {
-    setEditIndex(index);
-    setForm(clients[index]);
-    setOpen(true);
+  /* ── METRICS ── */
+  const totalClients     = clients.length;
+  const activeClients    = clients.filter(c => c.status === "Active").length;
+  const industries       = new Set(clients.map(c => c.industry)).size;
+  const completedProjects = clients.filter(c => c.status === "Completed").length;
+
+  const openAdd  = () => { setEditId(null); setForm(emptyForm); setOpen(true); };
+  const openEdit = (c)  => { setEditId(c._id); setForm({ company:c.company, contact:c.contact, email:c.email,
+    industry:c.industry, project:c.project, startDate:"", status:c.status }); setOpen(true); };
+
+  const handleSave = async () => {
+    const startDate = form.startDate
+      ? new Date(form.startDate).toLocaleString("en-US", { month:"short", year:"numeric" })
+      : (editId ? clients.find(c => c._id === editId)?.startDate : "");
+    const payload = { ...form, startDate, userEmail: activeEmail };
+    try {
+      if (editId) await Api.put(`/clients/${editId}`, payload);
+      else        await Api.post("/clients", payload);
+      fetchClients();
+      setOpen(false);
+    } catch (e) { console.error(e); }
   };
 
-  /* ================= SAVE ================= */
-  const handleSave = () => {
-    if (editIndex === null) {
-      setClients([...clients, form]);
-    } else {
-      const updated = [...clients];
-      updated[editIndex] = form;
-      setClients(updated);
-    }
-    setOpen(false);
+  const openDelete   = (c)  => { setDeleteId(c._id); setDeleteName(c.company); setDeleteOpen(true); };
+  const confirmDelete = async () => {
+    try { await Api.delete(`/clients/${deleteId}`); fetchClients(); setDeleteOpen(false); }
+    catch (e) { console.error(e); }
   };
 
-  /* ================= DELETE ================= */
-  const openDelete = (index) => {
-    setDeleteIndex(index);
-    setDeleteOpen(true);
-  };
-
-  const confirmDelete = () => {
-    setClients(clients.filter((_, i) => i !== deleteIndex));
-    setDeleteOpen(false);
-  };
+  if (!activeEmail) return <NoEmailGuard />;
+  if (loading) return <Box display="flex" justifyContent="center" mt={6}><CircularProgress /></Box>;
 
   return (
     <Box>
-      {/* ================= PAGE HEADER ================= */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h5" fontWeight="bold" display="flex" alignItems="center" gap={1}>
-          <PeopleAltIcon color="success" />
-          My Clients
+          <PeopleAltIcon color="success" /> My Clients
         </Typography>
-
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          sx={{ bgcolor: "#1f4d3a" }}
-          onClick={openAdd}
-        >
+        <Button variant="contained" startIcon={<AddIcon />} sx={{ bgcolor:"#1f4d3a" }} onClick={openAdd}>
           Add Client
         </Button>
       </Box>
 
-      {/* ================= METRIC CARDS (UNCHANGED) ================= */}
       <Grid container spacing={3} mb={4}>
         {[
-          { t: "Total Clients", v: 3, s: "All registered clients" },
-          { t: "Active Clients", v: 2, s: "Ongoing projects" },
-          { t: "Industries", v: 3, s: "Different sectors" },
-          { t: "Completed Projects", v: 1, s: "Delivered successfully" },
+          { t:"Total Clients",       v:totalClients,      s:"All registered clients" },
+          { t:"Active Clients",      v:activeClients,     s:"Ongoing projects" },
+          { t:"Industries",          v:industries,        s:"Different sectors" },
+          { t:"Completed Projects",  v:completedProjects, s:"Delivered successfully" },
         ].map((m, i) => (
-          <Grid key={i} size={{ xs: 12, md: 3 }}>
-            <Card sx={{ borderRadius: 3 }}>
+          <Grid key={i} size={{ xs:12, md:3 }}>
+            <Card sx={{ borderRadius:3 }}>
               <CardContent>
                 <Typography>{m.t}</Typography>
-                <Typography variant="h3" fontWeight="bold" sx={{ color: "#1f4d3a", my: 1 }}>
-                  {m.v}
-                </Typography>
+                <Typography variant="h3" fontWeight="bold" sx={{ color:"#1f4d3a", my:1 }}>{m.v}</Typography>
                 <Typography color="text.secondary">{m.s}</Typography>
-                <Box display="flex" gap={1} mt={2}>
-                  <Chip label="+0 today" color="success" size="small" />
-                  <Chip label="↑ 0%" color="success" size="small" variant="outlined" />
-                </Box>
               </CardContent>
             </Card>
           </Grid>
         ))}
       </Grid>
 
-      {/* ================= CLIENT TABLE ================= */}
       <Card>
         <CardContent>
-          <Typography variant="h6" mb={2}>
-            Client Details
-          </Typography>
-
+          <Typography variant="h6" mb={2}>Client Details</Typography>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell><b>Company</b></TableCell>
-                <TableCell><b>Contact Person</b></TableCell>
-                <TableCell><b>Email</b></TableCell>
-                <TableCell><b>Industry</b></TableCell>
-                <TableCell><b>Project</b></TableCell>
-                <TableCell><b>Start Date</b></TableCell>
-                <TableCell><b>Status</b></TableCell>
-                <TableCell><b>Actions</b></TableCell>
+                {["Company","Contact Person","Email","Industry","Project","Start Date","Status","Actions"].map(h => (
+                  <TableCell key={h}><b>{h}</b></TableCell>
+                ))}
               </TableRow>
             </TableHead>
-
             <TableBody>
-              {clients.map((c, index) => (
-                <TableRow key={index}>
+              {clients.map(c => (
+                <TableRow key={c._id}>
                   <TableCell>{c.company}</TableCell>
                   <TableCell>{c.contact}</TableCell>
                   <TableCell>{c.email}</TableCell>
@@ -195,125 +124,84 @@ export default function MyClients() {
                   <TableCell>{c.project}</TableCell>
                   <TableCell>{c.startDate}</TableCell>
                   <TableCell>
-                    <Chip
-                      label={c.status}
-                      color={c.status === "Active" ? "success" : "default"}
-                      size="small"
-                    />
+                    <Chip label={c.status} color={c.status==="Active"?"success":"default"} size="small" />
                   </TableCell>
                   <TableCell>
-                    <IconButton color="success" onClick={() => openEdit(index)}>
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton color="error" onClick={() => openDelete(index)}>
-                      <DeleteIcon />
-                    </IconButton>
+                    <IconButton color="success" onClick={() => openEdit(c)}><EditIcon /></IconButton>
+                    <IconButton color="error"   onClick={() => openDelete(c)}><DeleteIcon /></IconButton>
                   </TableCell>
                 </TableRow>
               ))}
+              {clients.length === 0 && (
+                <TableRow><TableCell colSpan={8} align="center">No clients yet. Add one!</TableCell></TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
-      {/* ================= ADD / EDIT CLIENT ================= */}
+      {/* ADD / EDIT */}
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ bgcolor: "#1f4d3a", color: "#fff" }}>
-          {editIndex === null ? "Add Client" : "Edit Client"}
-          <IconButton
-            onClick={() => setOpen(false)}
-            sx={{ position: "absolute", right: 8, top: 8, color: "#fff" }}
-          >
+        <DialogTitle sx={{ bgcolor:"#1f4d3a", color:"#fff" }}>
+          {editId === null ? "Add Client" : "Edit Client"}
+          <IconButton onClick={() => setOpen(false)} sx={{ position:"absolute", right:8, top:8, color:"#fff" }}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-
-        <DialogContent sx={{ mt: 2 }}>
+        <DialogContent sx={{ mt:2 }}>
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField fullWidth label="Company Name"
-                value={form.company}
-                onChange={(e) => setForm({ ...form, company: e.target.value })} />
+            <Grid size={{ xs:12, md:6 }}>
+              <TextField fullWidth label="Company Name" value={form.company}
+                onChange={e => setForm({...form, company:e.target.value})} />
             </Grid>
-
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField fullWidth label="Contact Person"
-                value={form.contact}
-                onChange={(e) => setForm({ ...form, contact: e.target.value })} />
+            <Grid size={{ xs:12, md:6 }}>
+              <TextField fullWidth label="Contact Person" value={form.contact}
+                onChange={e => setForm({...form, contact:e.target.value})} />
             </Grid>
-
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField fullWidth label="Email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            <Grid size={{ xs:12, md:6 }}>
+              <TextField fullWidth label="Email" value={form.email}
+                onChange={e => setForm({...form, email:e.target.value})} />
             </Grid>
-
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField fullWidth label="Industry"
-                value={form.industry}
-                onChange={(e) => setForm({ ...form, industry: e.target.value })} />
+            <Grid size={{ xs:12, md:6 }}>
+              <TextField fullWidth label="Industry" value={form.industry}
+                onChange={e => setForm({...form, industry:e.target.value})} />
             </Grid>
-
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField fullWidth label="Project"
-                value={form.project}
-                onChange={(e) => setForm({ ...form, project: e.target.value })} />
+            <Grid size={{ xs:12, md:6 }}>
+              <TextField fullWidth label="Project" value={form.project}
+                onChange={e => setForm({...form, project:e.target.value})} />
             </Grid>
-
-            <Grid size={{ xs: 12, md: 3 }}>
-              <TextField
-                type="date"
-                fullWidth
-                label="Start Date"
-                InputLabelProps={{ shrink: true }}
-                onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-              />
+            <Grid size={{ xs:12, md:3 }}>
+              <TextField type="date" fullWidth label="Start Date" InputLabelProps={{ shrink:true }}
+                onChange={e => setForm({...form, startDate:e.target.value})} />
             </Grid>
-
-            <Grid size={{ xs: 12, md: 3 }}>
-              <TextField
-                select
-                fullWidth
-                label="Status"
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-              >
+            <Grid size={{ xs:12, md:3 }}>
+              <TextField select fullWidth label="Status" value={form.status}
+                onChange={e => setForm({...form, status:e.target.value})}>
                 <MenuItem value="Active">Active</MenuItem>
                 <MenuItem value="Completed">Completed</MenuItem>
               </TextField>
             </Grid>
           </Grid>
         </DialogContent>
-
-        <DialogActions sx={{ p: 2 }}>
+        <DialogActions sx={{ p:2 }}>
           <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="contained" sx={{ bgcolor: "#1f4d3a" }} onClick={handleSave}>
-            {editIndex === null ? "Add Client" : "Update Client"}
+          <Button variant="contained" sx={{ bgcolor:"#1f4d3a" }} onClick={handleSave}>
+            {editId === null ? "Add Client" : "Update Client"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* ================= DELETE CONFIRMATION ================= */}
+      {/* DELETE */}
       <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ bgcolor: "#1f4d3a", color: "#fff" }}>
-          Confirm Delete
-        </DialogTitle>
-
-        <DialogContent sx={{ mt: 2 }}>
+        <DialogTitle sx={{ bgcolor:"#1f4d3a", color:"#fff" }}>Confirm Delete</DialogTitle>
+        <DialogContent sx={{ mt:2 }}>
           <Typography>Are you sure you want to delete this client?</Typography>
-          <Typography fontWeight="bold" mt={2}>
-            {clients[deleteIndex]?.company}
-          </Typography>
-          <Typography color="text.secondary" mt={1}>
-            This action cannot be undone.
-          </Typography>
+          <Typography fontWeight="bold" mt={2}>{deleteName}</Typography>
+          <Typography color="text.secondary" mt={1}>This action cannot be undone.</Typography>
         </DialogContent>
-
         <DialogActions>
           <Button onClick={() => setDeleteOpen(false)}>Cancel</Button>
-          <Button color="error" variant="contained" onClick={confirmDelete}>
-            Delete
-          </Button>
+          <Button color="error" variant="contained" onClick={confirmDelete}>Delete</Button>
         </DialogActions>
       </Dialog>
     </Box>
